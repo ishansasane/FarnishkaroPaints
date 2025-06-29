@@ -42,7 +42,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     if (!token) {
-      window.location.href = "https://sahanipaintsbackend.free.nf/";
+      window.location.href = "https://sheeladecor.free.nf/";
     } else if (!isAllowed) {
       alert("🚫 You do not have permission to access this page.");
       window.location.href = "/";

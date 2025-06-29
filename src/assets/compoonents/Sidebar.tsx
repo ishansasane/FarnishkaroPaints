@@ -26,6 +26,7 @@ import {
   User,
   Settings2,
   SettingsIcon,
+  PaintBucket,
 } from "lucide-react";
 import {
   createContext,
@@ -162,11 +163,11 @@ function SidebarContent({
     },
     { text: "Brands", path: "/masters/brands", icon: <Star size={20} /> },
     {
-      text: "Catalogues",
-      path: "/masters/catalogues",
-      icon: <BookOpen size={20} />,
+      text: "Paints",
+      path: "/masters/colors",
+      icon: <PaintBucket size={20} />,
     },
-    { text: "Interiors", path: "/masters/interiors", icon: <Home size={20} /> },
+    // { text: "Interiors", path: "/masters/interiors", icon: <Home size={20} /> },
     { text: "Tailors", path: "/masters/tailors", icon: <Scissors size={20} /> },
     {
       text: "Sales Associate",
@@ -270,7 +271,7 @@ function SidebarContent({
         />
 
         <a
-          href="http://sahanipaintsbackend.free.nf/user-management.php"
+          href="http://sheeladecor.free.nf/user-management.php"
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -319,8 +320,7 @@ function SidebarContent({
             <button
               onClick={() => {
                 localStorage.clear();
-                window.location.href =
-                  "https://sahanipaintsbackend.free.nf/logout.php";
+                window.location.href = "https://sheeladecor.free.nf/logout.php";
               }}
               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
             >
