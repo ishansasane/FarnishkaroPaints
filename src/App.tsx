@@ -51,11 +51,13 @@ import ProtectedRoute from "./auth/ProtectedRoute.tsx";
 import TokenHandler from "./auth/TokenHandler.tsx";
 import BankDetails from "./assets/pages/BankDetails.tsx";
 import TermsAndConditions from "./assets/pages/TermsAndConditions.tsx";
+import addSitePage from "./assets/pages/addSitePage.tsx";
 
 // 🔽 NEW: Redux for loading state
 import { useSelector } from "react-redux";
 import { RootState } from "./Redux/Store";
 import LaborsAttendance from "./assets/pages/LaborsAttendance.tsx";
+import AddSitePage from "./assets/pages/addSitePage.tsx";
 
 function App() {
   const [expanded, setExpanded] = useState(true);
@@ -108,6 +110,7 @@ function App() {
                         path="/product-group-form"
                         element={<ProductGroupForm />}
                       />
+                      <Route path="/add-site" element={<AddSitePage />} />
                       <Route path="/masters" element={<Masters />} />
                       <Route path="/tasks" element={<Tasks />} />
                       <Route path="/reports" element={<Reports />} />
@@ -122,7 +125,11 @@ function App() {
                         path="/interior-dialog"
                         element={<InteriorDialog />}
                       />
-                      <Route path="/bank" element={<LaborsAttendance />} />
+                      <Route
+                        path="/attendance"
+                        element={<LaborsAttendance />}
+                      />
+
                       <Route path="/terms" element={<TermsAndConditions />} />
                       <Route path="/tailor-dialog" element={<TailorDialog />} />
                       <Route

@@ -27,6 +27,7 @@ import {
   Settings2,
   SettingsIcon,
   PaintBucket,
+  Calendar,
 } from "lucide-react";
 import {
   createContext,
@@ -257,12 +258,12 @@ function SidebarContent({
           setMobileMenuOpen={setMobileMenuOpen}
         />
 
-        {/* <SidebarItem
-          icon={<Building2 size={20} />}
-          text="Banks"
-          path="/bank"
+        <SidebarItem
+          icon={<Calendar size={20} />}
+          text="Attendance"
+          path="/attendance"
           setMobileMenuOpen={setMobileMenuOpen}
-        /> */}
+        />
         <SidebarItem
           icon={<SettingsIcon size={20} />}
           text="Settings"
