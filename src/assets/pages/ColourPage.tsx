@@ -5,11 +5,14 @@ function ColourPage() {
   const [open, setOpen] = useState(false);
   const [sites, setSites] = useState([]);
   const [tableData, setTableData] = useState([]);
-  const [form, setForm] = useState({ site: "", shadeName: "", shadeCode: "" });
+  const [form, setForm] = useState({
+    site: "",
+    areas: [{ area: "", shadeName: "", shadeCode: "" }],
+  });
 
   useEffect(() => {
     fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getprojectdata"
     )
       .then((res) => res.json())
       .then((data) => {
@@ -23,13 +26,55 @@ function ColourPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleAreaChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedAreas = [...form.areas];
+    updatedAreas[index][name] = value;
+    setForm((prev) => ({ ...prev, areas: updatedAreas }));
+  };
+
+  const addNewArea = () => {
+    setForm((prev) => ({
+      ...prev,
+      areas: [...prev.areas, { area: "", shadeName: "", shadeCode: "" }],
+    }));
+  };
+
+  const removeArea = (index) => {
+    const updatedAreas = [...form.areas];
+    updatedAreas.splice(index, 1);
+    setForm((prev) => ({ ...prev, areas: updatedAreas }));
+  };
+
   const handleAdd = () => {
-    if (form.site && form.shadeName && form.shadeCode) {
-      setTableData([...tableData, form]);
-      setForm({ site: "", shadeName: "", shadeCode: "" });
+    if (
+      form.site &&
+      form.areas.every((a) => a.area && a.shadeName && a.shadeCode)
+    ) {
+      const newEntries = form.areas.map((area) => ({
+        site: form.site,
+        area: area.area,
+        shadeName: area.shadeName,
+        shadeCode: area.shadeCode,
+      }));
+
+      setTableData([...tableData, ...newEntries]);
+      setForm({
+        site: "",
+        areas: [{ area: "", shadeName: "", shadeCode: "" }],
+      });
       setOpen(false);
     }
   };
+
+  // Group table data by site for better display
+  const groupedData = tableData.reduce((acc, curr) => {
+    if (!acc[curr.site]) {
+      acc[curr.site] = [];
+    }
+    acc[curr.site].push(curr);
+    return acc;
+  }, {});
 
   return (
     <div className="p-6">
@@ -47,6 +92,7 @@ function ColourPage() {
         <thead className="bg-gray-100">
           <tr>
             <th className="border px-4 py-2 text-left">Site Name</th>
+            <th className="border px-4 py-2 text-left">Area</th>
             <th className="border px-4 py-2 text-left">Shade Name</th>
             <th className="border px-4 py-2 text-left">Shade Code</th>
           </tr>
@@ -54,17 +100,26 @@ function ColourPage() {
         <tbody>
           {tableData.length === 0 ? (
             <tr>
-              <td colSpan="3" className="text-center py-4 text-gray-500">
+              <td colSpan="4" className="text-center py-4 text-gray-500">
                 No data available
               </td>
             </tr>
           ) : (
-            tableData.map((row, index) => (
-              <tr key={index}>
-                <td className="border px-4 py-2">{row.site}</td>
-                <td className="border px-4 py-2">{row.shadeName}</td>
-                <td className="border px-4 py-2">{row.shadeCode}</td>
-              </tr>
+            Object.entries(groupedData).map(([site, entries]) => (
+              <React.Fragment key={site}>
+                {entries.map((entry, index) => (
+                  <tr key={`${site}-${index}`}>
+                    {index === 0 ? (
+                      <td className="border px-4 py-2" rowSpan={entries.length}>
+                        {site}
+                      </td>
+                    ) : null}
+                    <td className="border px-4 py-2">{entry.area}</td>
+                    <td className="border px-4 py-2">{entry.shadeName}</td>
+                    <td className="border px-4 py-2">{entry.shadeCode}</td>
+                  </tr>
+                ))}
+              </React.Fragment>
             ))
           )}
         </tbody>
@@ -73,7 +128,7 @@ function ColourPage() {
       {/* Modal Dialog */}
       {open && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg overflow-y-auto max-h-screen">
             <h2 className="text-lg font-semibold mb-4">Add New Colour</h2>
 
             <div className="mb-4">
@@ -93,28 +148,68 @@ function ColourPage() {
               </select>
             </div>
 
-            <div className="mb-4">
-              <label className="block mb-1 font-medium">Shade Name</label>
-              <input
-                name="shadeName"
-                value={form.shadeName}
-                onChange={handleChange}
-                type="text"
-                className="w-full border rounded px-3 py-2"
-                placeholder="Enter shade name"
-              />
-            </div>
+            {form.areas.map((area, index) => (
+              <div
+                key={index}
+                className="mb-4 border p-3 rounded-lg bg-gray-50"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-medium">Area {index + 1}</h3>
+                  {index > 0 && (
+                    <button
+                      onClick={() => removeArea(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
 
-            <div className="mb-4">
-              <label className="block mb-1 font-medium">Shade Code</label>
-              <input
-                name="shadeCode"
-                value={form.shadeCode}
-                onChange={handleChange}
-                type="text"
-                className="w-full border rounded px-3 py-2"
-                placeholder="Enter shade code"
-              />
+                <div className="mb-3">
+                  <label className="block mb-1">Area</label>
+                  <input
+                    name="area"
+                    value={area.area}
+                    onChange={(e) => handleAreaChange(index, e)}
+                    type="text"
+                    className="w-full border rounded px-3 py-2"
+                    placeholder="Enter area (e.g., kitchen, bathroom)"
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="block mb-1">Shade Name</label>
+                  <input
+                    name="shadeName"
+                    value={area.shadeName}
+                    onChange={(e) => handleAreaChange(index, e)}
+                    type="text"
+                    className="w-full border rounded px-3 py-2"
+                    placeholder="Enter shade name"
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="block mb-1">Shade Code</label>
+                  <input
+                    name="shadeCode"
+                    value={area.shadeCode}
+                    onChange={(e) => handleAreaChange(index, e)}
+                    type="text"
+                    className="w-full border rounded px-3 py-2"
+                    placeholder="Enter shade code"
+                  />
+                </div>
+              </div>
+            ))}
+
+            <div className="flex justify-between mb-4">
+              <button
+                onClick={addNewArea}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                + Add Another Area
+              </button>
             </div>
 
             <div className="flex justify-end space-x-2">
@@ -128,7 +223,7 @@ function ColourPage() {
                 onClick={handleAdd}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               >
-                Add
+                Add All
               </button>
             </div>
           </div>
