@@ -55,6 +55,7 @@ import TermsAndConditions from "./assets/pages/TermsAndConditions.tsx";
 // 🔽 NEW: Redux for loading state
 import { useSelector } from "react-redux";
 import { RootState } from "./Redux/Store";
+import LaborsAttendance from "./assets/pages/LaborsAttendance.tsx";
 
 function App() {
   const [expanded, setExpanded] = useState(true);
@@ -121,7 +122,7 @@ function App() {
                         path="/interior-dialog"
                         element={<InteriorDialog />}
                       />
-                      <Route path="/bank" element={<BankDetails />} />
+                      <Route path="/bank" element={<LaborsAttendance />} />
                       <Route path="/terms" element={<TermsAndConditions />} />
                       <Route path="/tailor-dialog" element={<TailorDialog />} />
                       <Route
