@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { fetchWithLoading } from "../Redux/fetchWithLoading";
+import { Pencil, Trash } from "lucide-react";
 
 function ColourPage() {
   const [open, setOpen] = useState(false);
@@ -9,6 +10,8 @@ function ColourPage() {
     site: "",
     areas: [{ area: "", shadeName: "", shadeCode: "" }],
   });
+  const [editMode, setEditMode] = useState(false);
+  const [editTarget, setEditTarget] = useState({ site: "", date: "" });
 
   useEffect(() => {
     fetchWithLoading(
@@ -18,8 +21,7 @@ function ColourPage() {
       .then((data) => {
         const siteNames = data.body.map((item) => item[0]);
         setSites(siteNames);
-      })
-      .catch((error) => console.error("Error fetching site data:", error));
+      });
 
     fetchWithLoading(
       "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsColorData"
@@ -46,8 +48,7 @@ function ColourPage() {
           }
         });
         setTableData(parsed);
-      })
-      .catch((err) => console.error("Error fetching paint data:", err));
+      });
   }, []);
 
   const handleChange = (e) => {
@@ -83,46 +84,75 @@ function ColourPage() {
         .map((a) => `[${a.area} , ${a.shadeName} , ${a.shadeCode}]`)
         .join("");
 
-      fetchWithLoading(
-        "https://sheeladecor.netlify.app/.netlify/functions/server/sendPaintsColorData",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            siteName: form.site,
-            areaCollection: areaString,
-            date: new Date().toISOString().split("T")[0], // e.g. 2025-07-01
-          }),
-        }
-      )
+      const payload = {
+        siteName: form.site,
+        areaCollection: areaString,
+        date: editMode
+          ? editTarget.date
+          : new Date().toISOString().split("T")[0],
+      };
+
+      const url = editMode
+        ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintsColorData"
+        : "https://sheeladecor.netlify.app/.netlify/functions/server/sendPaintsColorData";
+
+      fetchWithLoading(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
         .then((res) => res.json())
         .then((res) => {
-          if (res.success) {
-            alert("Data added successfully!");
-            // Optionally re-fetch
-            window.location.reload();
-          } else {
-            alert("Failed to add: " + res.message);
-          }
-        })
-        .catch((err) => {
-          console.error("POST error:", err);
-          alert("Something went wrong");
+          alert(res.success ? (editMode ? "Updated!" : "Added!") : res.message);
+          window.location.reload();
         });
 
       setForm({
         site: "",
         areas: [{ area: "", shadeName: "", shadeCode: "" }],
       });
+      setEditMode(false);
       setOpen(false);
     }
   };
 
+  const handleEdit = (site, date) => {
+    const matched = tableData.filter(
+      (item) => item.site === site && item.date === date
+    );
+    const areas = matched.map((i) => ({
+      area: i.area,
+      shadeName: i.shadeName,
+      shadeCode: i.shadeCode,
+    }));
+    setForm({ site, areas });
+    setEditTarget({ site, date });
+    setEditMode(true);
+    setOpen(true);
+  };
+
+  const handleDelete = (site, date) => {
+    if (window.confirm(`Delete entry for ${site} on ${date}?`)) {
+      fetchWithLoading(
+        "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsColorData",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ siteName: site, date }),
+        }
+      )
+        .then((res) => res.json())
+        .then((res) => {
+          alert(res.success ? "Deleted!" : res.message);
+          window.location.reload();
+        });
+    }
+  };
+
   const groupedData = tableData.reduce((acc, curr) => {
-    if (!acc[curr.site]) acc[curr.site] = [];
-    acc[curr.site].push(curr);
+    const key = `${curr.site}__${curr.date}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(curr);
     return acc;
   }, {});
 
@@ -131,7 +161,14 @@ function ColourPage() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Colour Table</h1>
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setForm({
+              site: "",
+              areas: [{ area: "", shadeName: "", shadeCode: "" }],
+            });
+            setEditMode(false);
+            setOpen(true);
+          }}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
           Add Colour
@@ -141,45 +178,61 @@ function ColourPage() {
       <table className="w-full border border-gray-300">
         <thead className="bg-gray-100">
           <tr>
-            <th className="border px-4 py-2 text-left">Site Name</th>
-            <th className="border px-4 py-2 text-left">Area</th>
-            <th className="border px-4 py-2 text-left">Shade Name</th>
-            <th className="border px-4 py-2 text-left">Shade Code</th>
+            <th className="border px-4 py-2">Site Name</th>
+            <th className="border px-4 py-2">Area</th>
+            <th className="border px-4 py-2">Shade Name</th>
+            <th className="border px-4 py-2">Shade Code</th>
+            <th className="border px-4 py-2">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {tableData.length === 0 ? (
-            <tr>
-              <td colSpan="4" className="text-center py-4 text-gray-500">
-                No data available
-              </td>
-            </tr>
-          ) : (
-            Object.entries(groupedData).map(([site, entries]) => (
-              <React.Fragment key={site}>
-                {entries.map((entry, index) => (
-                  <tr key={`${site}-${index}`}>
-                    {index === 0 && (
-                      <td className="border px-4 py-2" rowSpan={entries.length}>
-                        {site}
-                      </td>
-                    )}
-                    <td className="border px-4 py-2">{entry.area}</td>
-                    <td className="border px-4 py-2">{entry.shadeName}</td>
-                    <td className="border px-4 py-2">{entry.shadeCode}</td>
-                  </tr>
-                ))}
-              </React.Fragment>
-            ))
-          )}
+          {Object.entries(groupedData).map(([key, entries], idx) => {
+            const [site, date] = key.split("__");
+            return entries.map((entry, index) => (
+              <tr key={`${key}-${index}`}>
+                {index === 0 && (
+                  <>
+                    <td className="border px-4 py-2" rowSpan={entries.length}>
+                      {site}
+                    </td>
+                  </>
+                )}
+                <td className="border px-4 py-2">{entry.area}</td>
+                <td className="border px-4 py-2">{entry.shadeName}</td>
+                <td className="border px-4 py-2">{entry.shadeCode}</td>
+                {index === 0 && (
+                  <td className="border px-4 py-2" rowSpan={entries.length}>
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(site, date)}
+                        className="p-1 rounded hover:bg-gray-200"
+                        title="Edit"
+                      >
+                        <Pencil className="w-5 h-5 text-gray-700" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(site, date)}
+                        className="p-1 rounded hover:bg-gray-200"
+                        title="Delete"
+                      >
+                        <Trash className="w-5 h-5 text-gray-700" />
+                      </button>
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ));
+          })}
         </tbody>
       </table>
 
-      {/* Modal Dialog */}
+      {/* Modal */}
       {open && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg overflow-y-auto max-h-screen">
-            <h2 className="text-lg font-semibold mb-4">Add New Colour</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              {editMode ? "Edit Colour Data" : "Add New Colour"}
+            </h2>
 
             <div className="mb-4">
               <label className="block mb-1 font-medium">Site Name</label>
@@ -215,41 +268,30 @@ function ColourPage() {
                   )}
                 </div>
 
-                <div className="mb-3">
-                  <label className="block mb-1">Area</label>
-                  <input
-                    name="area"
-                    value={area.area}
-                    onChange={(e) => handleAreaChange(index, e)}
-                    type="text"
-                    className="w-full border rounded px-3 py-2"
-                    placeholder="Enter area"
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label className="block mb-1">Shade Name</label>
-                  <input
-                    name="shadeName"
-                    value={area.shadeName}
-                    onChange={(e) => handleAreaChange(index, e)}
-                    type="text"
-                    className="w-full border rounded px-3 py-2"
-                    placeholder="Enter shade name"
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label className="block mb-1">Shade Code</label>
-                  <input
-                    name="shadeCode"
-                    value={area.shadeCode}
-                    onChange={(e) => handleAreaChange(index, e)}
-                    type="text"
-                    className="w-full border rounded px-3 py-2"
-                    placeholder="Enter shade code"
-                  />
-                </div>
+                <input
+                  name="area"
+                  value={area.area}
+                  onChange={(e) => handleAreaChange(index, e)}
+                  type="text"
+                  className="w-full border rounded px-3 py-2 mb-2"
+                  placeholder="Area"
+                />
+                <input
+                  name="shadeName"
+                  value={area.shadeName}
+                  onChange={(e) => handleAreaChange(index, e)}
+                  type="text"
+                  className="w-full border rounded px-3 py-2 mb-2"
+                  placeholder="Shade Name"
+                />
+                <input
+                  name="shadeCode"
+                  value={area.shadeCode}
+                  onChange={(e) => handleAreaChange(index, e)}
+                  type="text"
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="Shade Code"
+                />
               </div>
             ))}
 
@@ -264,7 +306,10 @@ function ColourPage() {
 
             <div className="flex justify-end space-x-2">
               <button
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  setEditMode(false);
+                }}
                 className="px-4 py-2 border rounded hover:bg-gray-100"
               >
                 Cancel
@@ -273,7 +318,7 @@ function ColourPage() {
                 onClick={handleAdd}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               >
-                Add All
+                {editMode ? "Update" : "Add All"}
               </button>
             </div>
           </div>

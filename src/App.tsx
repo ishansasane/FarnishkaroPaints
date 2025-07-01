@@ -58,6 +58,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "./Redux/Store";
 import LaborsAttendance from "./assets/pages/LaborsAttendance.tsx";
 import AddSitePage from "./assets/pages/addSitePage.tsx";
+import LaborsPage from "./assets/pages/LaborsPage.tsx";
 
 function App() {
   const [expanded, setExpanded] = useState(true);
@@ -130,7 +131,7 @@ function App() {
                         element={<LaborsAttendance />}
                       />
 
-                      <Route path="/terms" element={<TermsAndConditions />} />
+                      <Route path="/masters/labours" element={<LaborsPage />} />
                       <Route path="/tailor-dialog" element={<TailorDialog />} />
                       <Route
                         path="/sales-associateDialog"

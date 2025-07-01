@@ -28,6 +28,7 @@ import {
   SettingsIcon,
   PaintBucket,
   Calendar,
+  PersonStanding,
 } from "lucide-react";
 import {
   createContext,
@@ -167,6 +168,11 @@ function SidebarContent({
       text: "Paints",
       path: "/masters/colors",
       icon: <PaintBucket size={20} />,
+    },
+    {
+      text: "Labours",
+      path: "/masters/labours",
+      icon: <PersonStanding size={20} />,
     },
     // { text: "Interiors", path: "/masters/interiors", icon: <Home size={20} /> },
     { text: "Tailors", path: "/masters/tailors", icon: <Scissors size={20} /> },

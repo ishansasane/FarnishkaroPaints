@@ -11,6 +11,43 @@ function LaborsAttendance() {
   const [laborNames, setLaborNames] = useState([]);
   const [newLaborName, setNewLaborName] = useState("");
   const [copyFromDate, setCopyFromDate] = useState("");
+  const [availableLabors, setAvailableLabors] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Function to parse labor data from API
+  const parseLaborData = (laborString) => {
+    try {
+      // Clean the string first
+      let cleanedString = laborString
+        .replace(/'/g, '"') // Replace single quotes with double quotes
+        .replace(/\./g, "") // Remove dots that might be in names
+        .replace(/\]\[/g, "],[") // Fix missing commas between arrays
+        .trim();
+
+      // Parse the JSON
+      const parsedData = JSON.parse(`[${cleanedString}]`);
+
+      // Handle the format: [["name", "dayStatus", "nightStatus"]]
+      return parsedData.map((item) => {
+        const name = item[0]?.trim() || "";
+        const dayStatus = item[1]?.trim().toUpperCase() || "";
+        const nightStatus = item[2]?.trim().toUpperCase() || "";
+        return { name, dayStatus, nightStatus };
+      });
+    } catch (error) {
+      console.error("Error parsing labor data:", error, "String:", laborString);
+      return [];
+    }
+  };
+
+  // Format labor data for API
+  const formatLaborData = (labors) => {
+    return labors.map((labor) => [
+      labor.name,
+      labor.dayStatus.toUpperCase(),
+      labor.nightStatus.toUpperCase(),
+    ]);
+  };
 
   // Fetch sites data
   useEffect(() => {
@@ -25,6 +62,70 @@ function LaborsAttendance() {
       .catch((error) => console.error("Error fetching site data:", error));
   }, []);
 
+  // Fetch available labors
+  useEffect(() => {
+    fetchWithLoading(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsLabourData"
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const uniqueLabors = Array.from(
+          new Set(data.body.map((item) => item[0]))
+        );
+        setAvailableLabors(uniqueLabors);
+      })
+      .catch((error) => console.error("Error fetching labor data:", error));
+  }, []);
+
+  // Fetch all attendance data
+  const fetchAttendanceData = () => {
+    fetchWithLoading(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getLabourData"
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const formattedData = data.body.map((item) => ({
+            date: item[0],
+            site: item[1],
+            labors: parseLaborData(item[2]),
+          }));
+          setAttendanceData(formattedData);
+        }
+      })
+      .catch((error) =>
+        console.error("Error fetching attendance data:", error)
+      );
+  };
+
+  // Load attendance data on component mount
+  useEffect(() => {
+    fetchAttendanceData();
+  }, []);
+
+  // Load attendance for selected date and site
+  useEffect(() => {
+    if (selectedSite && selectedDate) {
+      const entry = attendanceData.find(
+        (item) => item.date === selectedDate && item.site === selectedSite
+      );
+
+      if (entry) {
+        setLaborNames(
+          entry.labors.map((labor) => ({
+            name: labor.name,
+            dayStatus: labor.dayStatus,
+            nightStatus: labor.nightStatus,
+          }))
+        );
+        setIsEditing(true);
+      } else {
+        setLaborNames([]);
+        setIsEditing(false);
+      }
+    }
+  }, [selectedSite, selectedDate, attendanceData]);
+
   // Format date for display
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -36,8 +137,8 @@ function LaborsAttendance() {
     if (newLaborName.trim() && selectedSite) {
       const newLabor = {
         name: newLaborName.trim(),
-        day: "",
-        night: "",
+        dayStatus: "",
+        nightStatus: "",
       };
       setLaborNames([...laborNames, newLabor]);
       setNewLaborName("");
@@ -51,45 +152,108 @@ function LaborsAttendance() {
     setLaborNames(updatedLabors);
   };
 
-  // Save attendance for current site and date
+  // Save or update attendance
   const saveAttendance = () => {
     if (selectedSite && selectedDate && laborNames.length > 0) {
-      const newEntry = {
+      const formattedLabors = formatLaborData(laborNames);
+
+      const payload = {
         date: selectedDate,
-        site: selectedSite,
-        labors: [...laborNames],
+        siteName: selectedSite,
+        labours: JSON.stringify(formattedLabors).replace(/^\[|\]$/g, ""),
       };
 
-      // Check if entry for this date and site already exists
-      const existingIndex = attendanceData.findIndex(
-        (entry) => entry.date === selectedDate && entry.site === selectedSite
-      );
+      const url = isEditing
+        ? "https://sheeladecor.netlify.app/.netlify/functions/server/updateLabourData"
+        : "https://sheeladecor.netlify.app/.netlify/functions/server/sendLabourData";
 
-      if (existingIndex >= 0) {
-        const updatedData = [...attendanceData];
-        updatedData[existingIndex] = newEntry;
-        setAttendanceData(updatedData);
-      } else {
-        setAttendanceData([...attendanceData, newEntry]);
+      fetchWithLoading(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            alert(
+              `Attendance ${isEditing ? "updated" : "saved"} successfully!`
+            );
+            fetchAttendanceData(); // Refresh attendance data
+          } else {
+            throw new Error(
+              data.message ||
+                `Failed to ${isEditing ? "update" : "save"} attendance`
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Error saving attendance:", error);
+          alert(
+            `Failed to ${isEditing ? "update" : "save"} attendance: ${
+              error.message
+            }`
+          );
+        });
+    }
+  };
+
+  // Delete attendance
+  const deleteAttendance = () => {
+    if (selectedSite && selectedDate) {
+      if (
+        window.confirm(
+          "Are you sure you want to delete this attendance record?"
+        )
+      ) {
+        const payload = {
+          date: selectedDate,
+          siteName: selectedSite,
+        };
+
+        fetchWithLoading(
+          "https://sheeladecor.netlify.app/.netlify/functions/server/deleteLabourData",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          }
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              alert("Attendance deleted successfully!");
+              setLaborNames([]);
+              setIsEditing(false);
+              fetchAttendanceData(); // Refresh attendance data
+            } else {
+              throw new Error(data.message || "Failed to delete attendance");
+            }
+          })
+          .catch((error) => {
+            console.error("Error deleting attendance:", error);
+            alert("Failed to delete attendance: " + error.message);
+          });
       }
-
-      alert("Attendance saved successfully!");
     }
   };
 
   // Copy names from previous date
   const copyNamesFromPrevious = () => {
-    if (copyFromDate) {
+    if (copyFromDate && selectedSite) {
       const previousEntry = attendanceData.find(
-        (entry) => entry.date === copyFromDate && entry.site === selectedSite
+        (item) => item.date === copyFromDate && item.site === selectedSite
       );
 
       if (previousEntry) {
         setLaborNames(
           previousEntry.labors.map((labor) => ({
             name: labor.name,
-            day: "",
-            night: "",
+            dayStatus: "",
+            nightStatus: "",
           }))
         );
       } else {
@@ -142,16 +306,24 @@ function LaborsAttendance() {
               ))}
             </select>
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
               onClick={saveAttendance}
               disabled={
                 !selectedSite || !selectedDate || laborNames.length === 0
               }
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400"
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400"
             >
-              Save Attendance
+              {isEditing ? "Update" : "Save"} Attendance
             </button>
+            {isEditing && (
+              <button
+                onClick={deleteAttendance}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
 
@@ -186,17 +358,30 @@ function LaborsAttendance() {
 
         {/* Add new labor */}
         <div className="flex gap-2 mb-6">
+          <select
+            value={newLaborName}
+            onChange={(e) => setNewLaborName(e.target.value)}
+            className="flex-1 p-2 border rounded"
+          >
+            <option value="">Select Labor</option>
+            {availableLabors.map((labor, index) => (
+              <option key={index} value={labor}>
+                {labor}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             value={newLaborName}
             onChange={(e) => setNewLaborName(e.target.value)}
-            placeholder="Enter labor name"
+            placeholder="Or enter labor name"
             className="flex-1 p-2 border rounded"
             onKeyPress={(e) => e.key === "Enter" && addLabor()}
           />
           <button
             onClick={addLabor}
-            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+            disabled={!newLaborName.trim()}
+            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400"
           >
             Add Labor
           </button>
@@ -220,28 +405,28 @@ function LaborsAttendance() {
                     <td className="border p-2">{labor.name}</td>
                     <td className="border p-2">
                       <select
-                        value={labor.day}
+                        value={labor.dayStatus}
                         onChange={(e) =>
-                          updateAttendance(index, "day", e.target.value)
+                          updateAttendance(index, "dayStatus", e.target.value)
                         }
                         className="w-full p-1 border rounded"
                       >
                         <option value="">Select</option>
-                        <option value="p">Present (P)</option>
-                        <option value="a">Absent (A)</option>
+                        <option value="P">Present (P)</option>
+                        <option value="A">Absent (A)</option>
                       </select>
                     </td>
                     <td className="border p-2">
                       <select
-                        value={labor.night}
+                        value={labor.nightStatus}
                         onChange={(e) =>
-                          updateAttendance(index, "night", e.target.value)
+                          updateAttendance(index, "nightStatus", e.target.value)
                         }
                         className="w-full p-1 border rounded"
                       >
                         <option value="">Select</option>
-                        <option value="p">Present (P)</option>
-                        <option value="a">Absent (A)</option>
+                        <option value="P">Present (P)</option>
+                        <option value="A">Absent (A)</option>
                       </select>
                     </td>
                     <td className="border p-2">
@@ -268,51 +453,61 @@ function LaborsAttendance() {
       <div>
         <h2 className="text-xl font-semibold mb-4">Attendance Records</h2>
 
-        {Object.entries(groupedByDate).length === 0 ? (
+        {attendanceData.length === 0 ? (
           <p className="text-gray-500">No attendance records found</p>
         ) : (
-          Object.entries(groupedByDate).map(([date, entries]) => (
-            <div key={date} className="mb-8">
-              <h3 className="text-lg font-medium mb-2">
-                Date: {formatDate(date)}
-              </h3>
-
-              {entries.map((entry, index) => (
-                <div
-                  key={`${date}-${index}`}
-                  className="mb-6 bg-white p-4 rounded shadow"
-                >
-                  <h4 className="font-medium mb-2">Site: {entry.site}</h4>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="border p-2 text-left">Name</th>
-                          <th className="border p-2 text-left">Day</th>
-                          <th className="border p-2 text-left">Night</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {entry.labors.map((labor, laborIndex) => (
-                          <tr key={laborIndex}>
-                            <td className="border p-2">{labor.name}</td>
-                            <td className="border p-2">
-                              {labor.day === "p" ? "Present (P)" : "Absent (A)"}
-                            </td>
-                            <td className="border p-2">
-                              {labor.night === "p"
-                                ? "Present (P)"
-                                : "Absent (A)"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+          attendanceData
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .map((entry, index) => (
+              <div key={index} className="mb-6 bg-white p-4 rounded shadow">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-medium">
+                    Date: {formatDate(entry.date)}
+                  </h3>
+                  <div className="flex gap-2">
+                    <h4 className="text-md font-medium">Site: {entry.site}</h4>
+                    <button
+                      onClick={() => {
+                        setSelectedDate(entry.date);
+                        setSelectedSite(entry.site);
+                        window.scrollTo(0, 0);
+                      }}
+                      className="text-blue-500 hover:text-blue-700 text-sm"
+                    >
+                      Edit
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          ))
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border p-2 text-left">Name</th>
+                        <th className="border p-2 text-left">Day</th>
+                        <th className="border p-2 text-left">Night</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {entry.labors.map((labor, laborIndex) => (
+                        <tr key={laborIndex}>
+                          <td className="border p-2">{labor.name}</td>
+                          <td className="border p-2">
+                            {labor.dayStatus === "P"
+                              ? "Present (P)"
+                              : "Absent (A)"}
+                          </td>
+                          <td className="border p-2">
+                            {labor.nightStatus === "P"
+                              ? "Present (P)"
+                              : "Absent (A)"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))
         )}
       </div>
     </div>
