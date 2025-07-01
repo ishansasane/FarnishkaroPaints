@@ -7,7 +7,7 @@ export const fetchWithLoading = async (
   init?: RequestInit
 ): Promise<Response> => {
   try {
-    store.dispatch(setLoading(false));
+    store.dispatch(setLoading(true));
     const response = await fetch(input, init);
     return response;
   } finally {

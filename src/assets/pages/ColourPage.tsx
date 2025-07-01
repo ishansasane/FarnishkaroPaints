@@ -20,6 +20,34 @@ function ColourPage() {
         setSites(siteNames);
       })
       .catch((error) => console.error("Error fetching site data:", error));
+
+    fetchWithLoading(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsColorData"
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const parsed = [];
+        data.body.forEach(([siteName, areaCollection, date]) => {
+          const matches = areaCollection.match(/\[([^\]]+)\]/g);
+          if (matches) {
+            matches.forEach((block) => {
+              const parts = block
+                .replace(/[\[\]]/g, "")
+                .split(",")
+                .map((p) => p.trim());
+              parsed.push({
+                site: siteName,
+                area: parts[0] || "",
+                shadeName: parts[1] || "",
+                shadeCode: parts[2] || "",
+                date,
+              });
+            });
+          }
+        });
+        setTableData(parsed);
+      })
+      .catch((err) => console.error("Error fetching paint data:", err));
   }, []);
 
   const handleChange = (e) => {
@@ -51,14 +79,39 @@ function ColourPage() {
       form.site &&
       form.areas.every((a) => a.area && a.shadeName && a.shadeCode)
     ) {
-      const newEntries = form.areas.map((area) => ({
-        site: form.site,
-        area: area.area,
-        shadeName: area.shadeName,
-        shadeCode: area.shadeCode,
-      }));
+      const areaString = form.areas
+        .map((a) => `[${a.area} , ${a.shadeName} , ${a.shadeCode}]`)
+        .join("");
 
-      setTableData([...tableData, ...newEntries]);
+      fetchWithLoading(
+        "https://sheeladecor.netlify.app/.netlify/functions/server/sendPaintsColorData",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            siteName: form.site,
+            areaCollection: areaString,
+            date: new Date().toISOString().split("T")[0], // e.g. 2025-07-01
+          }),
+        }
+      )
+        .then((res) => res.json())
+        .then((res) => {
+          if (res.success) {
+            alert("Data added successfully!");
+            // Optionally re-fetch
+            window.location.reload();
+          } else {
+            alert("Failed to add: " + res.message);
+          }
+        })
+        .catch((err) => {
+          console.error("POST error:", err);
+          alert("Something went wrong");
+        });
+
       setForm({
         site: "",
         areas: [{ area: "", shadeName: "", shadeCode: "" }],
@@ -67,11 +120,8 @@ function ColourPage() {
     }
   };
 
-  // Group table data by site for better display
   const groupedData = tableData.reduce((acc, curr) => {
-    if (!acc[curr.site]) {
-      acc[curr.site] = [];
-    }
+    if (!acc[curr.site]) acc[curr.site] = [];
     acc[curr.site].push(curr);
     return acc;
   }, {});
@@ -109,11 +159,11 @@ function ColourPage() {
               <React.Fragment key={site}>
                 {entries.map((entry, index) => (
                   <tr key={`${site}-${index}`}>
-                    {index === 0 ? (
+                    {index === 0 && (
                       <td className="border px-4 py-2" rowSpan={entries.length}>
                         {site}
                       </td>
-                    ) : null}
+                    )}
                     <td className="border px-4 py-2">{entry.area}</td>
                     <td className="border px-4 py-2">{entry.shadeName}</td>
                     <td className="border px-4 py-2">{entry.shadeCode}</td>
@@ -173,7 +223,7 @@ function ColourPage() {
                     onChange={(e) => handleAreaChange(index, e)}
                     type="text"
                     className="w-full border rounded px-3 py-2"
-                    placeholder="Enter area (e.g., kitchen, bathroom)"
+                    placeholder="Enter area"
                   />
                 </div>
 
