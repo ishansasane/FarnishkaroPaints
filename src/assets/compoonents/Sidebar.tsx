@@ -76,7 +76,7 @@ export default function Sidebar() {
       >
         <div className="p-4 pb-2 flex justify-between items-center">
           <img
-            src="https://sheeladecor.free.nf/logo/sheeladecore.png"
+            src="https://sheeladecor.free.nf/logo/SahaniPaints.png"
             className={`overflow-hidden transition-all duration-300 ${
               expanded ? "w-32" : "w-0"
             }`}
@@ -106,7 +106,7 @@ export default function Sidebar() {
           {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
         <img
-          src="https://img.logoipsum.com/243.svg"
+          src="https://sheeladecor.free.nf/logo/SahaniPaints.png"
           onClick={() => navigate("/")}
           className="w-28"
           alt="Logo"
