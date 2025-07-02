@@ -2,6 +2,21 @@ import React, { useEffect, useState } from "react";
 import { fetchWithLoading } from "../Redux/fetchWithLoading";
 import { Pencil, Trash } from "lucide-react";
 
+// ✅ Helper to check permission
+const hasPermission = (route: string): boolean => {
+  try {
+    const raw = localStorage.getItem("allowed_routes");
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return false;
+
+    const normalized = route.replace(/\\/g, "").replace(/\/+$/, "");
+    return parsed.includes(normalized);
+  } catch {
+    return false;
+  }
+};
+
 function ColourPage() {
   const [open, setOpen] = useState(false);
   const [sites, setSites] = useState([]);
@@ -12,6 +27,8 @@ function ColourPage() {
   });
   const [editMode, setEditMode] = useState(false);
   const [editTarget, setEditTarget] = useState({ site: "", date: "" });
+
+  const canEdit = hasPermission("/edit-colour"); // ✅ Check once
 
   useEffect(() => {
     fetchWithLoading(
@@ -191,33 +208,33 @@ function ColourPage() {
             return entries.map((entry, index) => (
               <tr key={`${key}-${index}`}>
                 {index === 0 && (
-                  <>
-                    <td className="border px-4 py-2" rowSpan={entries.length}>
-                      {site}
-                    </td>
-                  </>
+                  <td className="border px-4 py-2" rowSpan={entries.length}>
+                    {site}
+                  </td>
                 )}
                 <td className="border px-4 py-2">{entry.area}</td>
                 <td className="border px-4 py-2">{entry.shadeName}</td>
                 <td className="border px-4 py-2">{entry.shadeCode}</td>
                 {index === 0 && (
                   <td className="border px-4 py-2" rowSpan={entries.length}>
-                    <div className="flex gap-2 justify-center">
-                      <button
-                        onClick={() => handleEdit(site, date)}
-                        className="p-1 rounded hover:bg-gray-200"
-                        title="Edit"
-                      >
-                        <Pencil className="w-5 h-5 text-gray-700" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(site, date)}
-                        className="p-1 rounded hover:bg-gray-200"
-                        title="Delete"
-                      >
-                        <Trash className="w-5 h-5 text-gray-700" />
-                      </button>
-                    </div>
+                    {canEdit && (
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => handleEdit(site, date)}
+                          className="p-1 rounded hover:bg-gray-200"
+                          title="Edit"
+                        >
+                          <Pencil className="w-5 h-5 text-gray-700" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(site, date)}
+                          className="p-1 rounded hover:bg-gray-200"
+                          title="Delete"
+                        >
+                          <Trash className="w-5 h-5 text-gray-700" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 )}
               </tr>

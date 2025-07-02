@@ -14,6 +14,23 @@ function LaborsAttendance() {
   const [availableLabors, setAvailableLabors] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
 
+  const hasPermission = (requiredRoute: string): boolean => {
+    try {
+      const allowedRoutes = JSON.parse(
+        localStorage.getItem("allowed_routes") || "[]"
+      );
+      if (!Array.isArray(allowedRoutes)) return false;
+
+      return allowedRoutes.includes(
+        requiredRoute.replace(/\\/g, "").replace(/\/+$/, "")
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  const canEditAttendance = hasPermission("/edit-attendence");
+
   // Function to parse labor data from API
   const parseLaborData = (laborString) => {
     try {
@@ -307,16 +324,21 @@ function LaborsAttendance() {
             </select>
           </div>
           <div className="flex items-end gap-2">
-            <button
-              onClick={saveAttendance}
-              disabled={
-                !selectedSite || !selectedDate || laborNames.length === 0
-              }
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              {isEditing ? "Update" : "Save"} Attendance
-            </button>
-            {isEditing && (
+            {(canEditAttendance || !isEditing) && (
+              <button
+                onClick={saveAttendance}
+                disabled={
+                  !selectedSite ||
+                  !selectedDate ||
+                  laborNames.length === 0 ||
+                  (isEditing && !canEditAttendance)
+                }
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {isEditing ? "Update" : "Save"} Attendance
+              </button>
+            )}
+            {isEditing && canEditAttendance && (
               <button
                 onClick={deleteAttendance}
                 className="flex-1 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
@@ -466,16 +488,18 @@ function LaborsAttendance() {
                   </h3>
                   <div className="flex gap-2">
                     <h4 className="text-md font-medium">Site: {entry.site}</h4>
-                    <button
-                      onClick={() => {
-                        setSelectedDate(entry.date);
-                        setSelectedSite(entry.site);
-                        window.scrollTo(0, 0);
-                      }}
-                      className="text-blue-500 hover:text-blue-700 text-sm"
-                    >
-                      Edit
-                    </button>
+                    {canEditAttendance && (
+                      <button
+                        onClick={() => {
+                          setSelectedDate(entry.date);
+                          setSelectedSite(entry.site);
+                          window.scrollTo(0, 0);
+                        }}
+                        className="text-blue-500 hover:text-blue-700 text-sm"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="overflow-x-auto">

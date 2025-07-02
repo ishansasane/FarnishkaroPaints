@@ -59,7 +59,7 @@ const Dashboard: React.FC = () => {
     phonenumber: "",
   });
 
-  const sendInquiry = async () => {
+  const sendPaintsInquiry = async () => {
     const projectName = inquiryForm.project.trim();
     const comment = inquiryForm.comments;
     const inquiryDate = inquiryForm.inquiryDate;
@@ -587,7 +587,7 @@ const Dashboard: React.FC = () => {
       followUpDate: "",
     });
   };
-  const handleDeleteInquiry = async (projectName) => {
+  const handledeletePaintsInquiry = async (projectName) => {
     const response = await fetchWithLoading(
       "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsInquiry",
       {
@@ -993,7 +993,7 @@ const Dashboard: React.FC = () => {
                       className="bg-sky-600 text-white px-4 py-2 !rounded-lg hover:bg-sky-700 transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
-                        sendInquiry();
+                        sendPaintsInquiry();
                       }}
                     >
                       Submit
@@ -1062,7 +1062,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="flex justify-between mt-6">
                 <button
-                  onClick={() => handleDeleteInquiry(selectedInquiry[0])}
+                  onClick={() => handledeletePaintsInquiry(selectedInquiry[0])}
                   className="bg-white border !border-red-500 text-red-500 px-4 py-2 !rounded-lg hover:!bg-red-500 hover:!text-white transition-colors"
                 >
                   Delete
