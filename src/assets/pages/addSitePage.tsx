@@ -29,7 +29,7 @@ function AddSitePage() {
       try {
         // Fetch Customers
         const customerResponse = await fetchWithLoading(
-          "https://sheeladecor.netlify.app/.netlify/functions/server/getcustomerdata",
+          "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
           { credentials: "include" }
         );
         const customerJson = await customerResponse.json();

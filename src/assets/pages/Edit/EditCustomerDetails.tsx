@@ -52,7 +52,7 @@ const EditCustomerDetails = ({
   const dispatch = useDispatch();
   const customerData = useSelector((state: RootState) => state.data.customers);
 
-  async function sendcustomerData() {
+  async function sendpaintscustomerdata() {
     const phonenumber = mobile;
     let date = undefined;
     const now = new Date();
@@ -220,7 +220,7 @@ const EditCustomerDetails = ({
               </button>
               <button
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm sm:text-base"
-                onClick={sendcustomerData}
+                onClick={sendpaintscustomerdata}
               >
                 Save
               </button>

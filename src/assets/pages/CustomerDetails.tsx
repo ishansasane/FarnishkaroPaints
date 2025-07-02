@@ -53,7 +53,7 @@ const CustomerDetails = ({
   const dispatch = useDispatch();
   const customerData = useSelector((state: RootState) => state.data.customers);
 
-  async function sendcustomerData() {
+  async function sendpaintscustomerdata() {
     const phonenumber = mobile;
     let date = undefined;
 
@@ -233,7 +233,7 @@ const CustomerDetails = ({
                   </button>
                   <button
                     className="bg-blue-500 text-white px-4 py-2 rounded"
-                    onClick={sendcustomerData}
+                    onClick={sendpaintscustomerdata}
                   >
                     Save
                   </button>

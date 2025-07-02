@@ -196,7 +196,7 @@ const TermsSection = () => {
     }
   };
 
-  const deleteTermsData = async (termsText: string) => {
+  const deletePaintsTermsData = async (termsText: string) => {
     if (!confirm("Are you sure you want to delete these terms?")) return;
 
     setIsLoading(true);
@@ -278,7 +278,7 @@ const TermsSection = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => deleteTermsData(data[0])}
+                        onClick={() => deletePaintsTermsData(data[0])}
                         className="text-red-600 hover:text-red-900"
                         title="Delete"
                         disabled={isLoading}
@@ -444,7 +444,7 @@ const BankSection = () => {
     }
   };
 
-  const deleteBankData = async (customerName: string) => {
+  const deletePaintsBankData = async (customerName: string) => {
     if (!confirm("Are you sure you want to delete this bank record?")) return;
 
     setIsLoading(true);
@@ -684,7 +684,7 @@ const BankSection = () => {
                         <Pencil size={18} />
                       </button>
                       <button
-                        onClick={() => deleteBankData(data[0])}
+                        onClick={() => deletePaintsBankData(data[0])}
                         className="text-red-600 hover:text-red-800"
                         title="Delete"
                         disabled={isLoading}

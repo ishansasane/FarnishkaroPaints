@@ -160,7 +160,7 @@ function AddProjectForm() {
   const fetchCustomers = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sheeladecor.netlify.app/.netlify/functions/server/getcustomerdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
         {
           credentials: "include",
         }
@@ -253,14 +253,14 @@ function AddProjectForm() {
   }
   const fetchTermsData = async () => {
     const response = await fetchWithLoading(
-      "https://sheeladecor.netlify.app/.netlify/functions/server/getTermsData"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsTermsData"
     );
     const data = await response.json();
     return data.body || [];
   };
   const fetchBankData = async () => {
     const response = await fetchWithLoading(
-      "https://sheeladecor.netlify.app/.netlify/functions/server/getBankData"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsBankData"
     );
     const data = await response.json();
     return data.body || [];

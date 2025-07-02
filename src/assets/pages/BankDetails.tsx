@@ -87,7 +87,7 @@ const BankDetails = () => {
     }
   };
 
-  const deleteBankData = async (customerName: string) => {
+  const deletePaintsBankData = async (customerName: string) => {
     if (!confirm("Are you sure you want to delete this bank record?")) return;
 
     try {
@@ -328,7 +328,7 @@ const BankDetails = () => {
                               <Pencil size={16} />
                             </button>
                             <button
-                              onClick={() => deleteBankData(data[0])}
+                              onClick={() => deletePaintsBankData(data[0])}
                               className="text-red-600 hover:text-red-800 transition-colors"
                               title="Delete"
                             >

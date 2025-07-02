@@ -273,7 +273,7 @@ const CustomerDashboard = ({
     fetchAndCalculate();
   }, [dispatch, customerDashboardData]);
 
-  async function sendcustomerData() {
+  async function sendpaintscustomerdata() {
     let date = undefined;
     const now = new Date();
     date = now.toISOString().slice(0, 16);
@@ -553,7 +553,7 @@ const CustomerDashboard = ({
         </div>
         <div className="flex justify-end mt-4">
           <button
-            onClick={sendcustomerData}
+            onClick={sendpaintscustomerdata}
             className="px-4 py-2 bg-sky-600 text-white text-sm rounded-lg hover:bg-sky-700 transition-colors"
           >
             Update

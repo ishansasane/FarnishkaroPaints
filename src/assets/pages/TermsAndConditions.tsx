@@ -49,7 +49,7 @@ const TermsAndConditions = () => {
     }
   };
 
-  const deleteTermsData = async (terms: string) => {
+  const deletePaintsTermsData = async (terms: string) => {
     const response = await fetch(
       "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsTermsData",
       {
@@ -132,7 +132,7 @@ const TermsAndConditions = () => {
                     </td>
                     <td className="px-4 py-2">
                       <button
-                        onClick={() => deleteTermsData(data[0])}
+                        onClick={() => deletePaintsTermsData(data[0])}
                         className="text-red-600 hover:text-red-800"
                         title="Delete"
                       >
