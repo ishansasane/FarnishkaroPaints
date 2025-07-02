@@ -14,7 +14,7 @@ const PassReset: React.FC = () => {
 
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/auth/forgotpassword",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/auth/forgotpassword",
         {
           method: "POST",
           headers: {

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux"; // ✅ FIXED
 import { fetchWithLoading } from "../Redux/fetchWithLoading";
+import { RootState } from "../Redux/Store"; // ✅ Make sure this is correct
+import { setSalesAssociateData } from "../Redux/dataSlice"; // ✅ Add this if missing
 
 interface SalesAssociateDialogProps {
   setDialogOpen: (open: boolean) => void;
@@ -13,7 +16,7 @@ interface SalesAssociateDialogProps {
 async function fetchSalesAssociates(): Promise<string[][]> {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsalesassociatedata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssalesassociatedata",
       { credentials: "include" }
     );
     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -38,27 +41,21 @@ const SalesAssociateDialog: React.FC<SalesAssociateDialogProps> = ({
     (state: RootState) => state.data.salesAssociates
   );
 
-  const [name, setName] = useState(
-    editingSalesAssociate ? editingSalesAssociate[0] : ""
-  );
-  const [email, setEmail] = useState(
-    editingSalesAssociate ? editingSalesAssociate[1] : ""
-  );
+  const [name, setName] = useState(editingSalesAssociate?.[0] || "");
+  const [email, setEmail] = useState(editingSalesAssociate?.[1] || "");
   const [phonenumber, setPhoneNumber] = useState(
-    editingSalesAssociate ? editingSalesAssociate[2] : ""
+    editingSalesAssociate?.[2] || ""
   );
-  const [address, setAddress] = useState(
-    editingSalesAssociate ? editingSalesAssociate[3] : ""
-  );
+  const [address, setAddress] = useState(editingSalesAssociate?.[3] || "");
 
   const handleSubmit = async () => {
-    // ✅ Duplicate check (only for Add mode)
+    // ✅ Check for duplicate on add
     if (!editingSalesAssociate) {
       const duplicate = salesAssociates.find(
         (sa) => sa[0].toLowerCase().trim() === name.toLowerCase().trim()
       );
       if (duplicate) {
-        alert("Already data present");
+        alert("Sales Associate with this name already exists.");
         setDialogOpen(false);
         setEditingSalesAssociate(null);
         setRefresh(!refresh);
@@ -67,8 +64,8 @@ const SalesAssociateDialog: React.FC<SalesAssociateDialogProps> = ({
     }
 
     const url = editingSalesAssociate
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatesalesassociatedata"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendsalesassociatedata";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintssalesassociatedata"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/sendpaintssalesassociatedata";
 
     try {
       const response = await fetchWithLoading(url, {
@@ -101,7 +98,8 @@ const SalesAssociateDialog: React.FC<SalesAssociateDialogProps> = ({
         setRefresh(!refresh);
         navigate("/masters/sales-associate");
       } else {
-        alert("Error saving sales associate");
+        const errorText = await response.text();
+        alert("Error saving sales associate: " + errorText);
       }
     } catch (error) {
       console.error("Error saving sales associate:", error);
@@ -111,10 +109,10 @@ const SalesAssociateDialog: React.FC<SalesAssociateDialogProps> = ({
 
   return (
     <>
-      {/* ✅ Background overlay */}
+      {/* Overlay */}
       <div className="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
 
-      {/* ✅ Dialog */}
+      {/* Dialog */}
       <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
         <div className="bg-white p-6 rounded shadow-md w-full border">
           <h2 className="text-xl font-bold mb-4">

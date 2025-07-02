@@ -24,7 +24,7 @@ const NewPass: React.FC = () => {
     }
 
     const response = await fetch(
-      `https://sahanipaintsbackend.netlify.app/.netlify/functions/server/auth/passwordreset/${token}`,
+      `https://sheeladecor.netlify.app/.netlify/functions/server/auth/passwordreset/${token}`,
       {
         method: "POST",
         headers: {

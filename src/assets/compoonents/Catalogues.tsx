@@ -15,7 +15,7 @@ interface Catalogue {
 async function fetchCatalogues(): Promise<Catalogue[]> {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcatalogues",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getcatalogues",
       {
         credentials: "include",
       }
@@ -40,7 +40,7 @@ async function deleteCatalogue(
 ) {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletecatalogue",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletecatalogue",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -22,7 +22,7 @@ interface AddCustomerDialogProps {
 async function fetchCustomers() {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcustomerdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
       { credentials: "include" }
     );
 
@@ -70,8 +70,8 @@ const AddCustomerDialog: React.FC<AddCustomerDialogProps> = ({
     }
 
     const api = editing
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatecustomerdata"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendcustomerdata";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintscustomerdata"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/sendpaintscustomerdata";
 
     const response = await fetchWithLoading(api, {
       method: "POST",

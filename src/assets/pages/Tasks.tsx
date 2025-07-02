@@ -25,7 +25,7 @@ interface Task {
 
 const fetchTaskData = async () => {
   const response = await fetch(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettasks"
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintstasks"
   );
   const data = await response.json();
   if (data.body) {
@@ -56,7 +56,7 @@ export default function Tasks() {
 
   const deleteTask = async (name: string) => {
     await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletetask",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintstask",
       {
         method: "POST",
         headers: {
@@ -74,7 +74,7 @@ export default function Tasks() {
   const fetchProjectData = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
         {
           credentials: "include",
         }

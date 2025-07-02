@@ -151,7 +151,7 @@ function AddProjectForm() {
 
   const getItemsData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsingleproducts"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getsingleproducts"
     );
     const data = await response.json();
     return data.body;
@@ -160,7 +160,7 @@ function AddProjectForm() {
   const fetchCustomers = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcustomerdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getcustomerdata",
         {
           credentials: "include",
         }
@@ -179,7 +179,7 @@ function AddProjectForm() {
   async function fetchCatalogues() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcatalogues",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getcatalogues",
         {
           credentials: "include",
         }
@@ -198,7 +198,7 @@ function AddProjectForm() {
   async function fetchInteriors() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getinteriordata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsinteriordata",
         {
           credentials: "include",
         }
@@ -217,7 +217,7 @@ function AddProjectForm() {
   async function fetchSalesAssociates() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsalesassociatedata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getsalesassociatedata",
         {
           credentials: "include",
         }
@@ -236,7 +236,7 @@ function AddProjectForm() {
   async function fetchProductGroups(): Promise<ProductGroup[]> {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getallproductgroup",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getallproductgroup",
         {
           credentials: "include",
         }
@@ -253,14 +253,14 @@ function AddProjectForm() {
   }
   const fetchTermsData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getTermsData"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getTermsData"
     );
     const data = await response.json();
     return data.body || [];
   };
   const fetchBankData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getBankData"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getBankData"
     );
     const data = await response.json();
     return data.body || [];
@@ -1136,7 +1136,7 @@ function AddProjectForm() {
 
   const fetchProjectData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
       {
         credentials: "include",
       }
@@ -1372,8 +1372,23 @@ function AddProjectForm() {
 
       const newdate = day + "/" + month + "/" + year;
 
+      const finalAmount =
+        typeof amount !== "undefined" && !isNaN(amount)
+          ? amount
+          : parseFloat(paymentData?.totalValue || "0");
+
+      const finalPaid =
+        typeof paid !== "undefined" && !isNaN(paid)
+          ? paid
+          : parseFloat(paymentData?.paid || "0");
+
+      const finalGrandTotal =
+        typeof grandTotal !== "undefined" && !isNaN(grandTotal)
+          ? grandTotal
+          : finalAmount;
+
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendprojectdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/sendpaintsprojectdata",
         {
           method: "POST",
           credentials: "include",
@@ -1385,7 +1400,7 @@ function AddProjectForm() {
             customerLink: JSON.stringify(selectedCustomer),
             projectReference,
             status,
-            totalAmount: amount,
+            totalAmount: finalAmount,
             totalTax: tax,
             paid,
             discount,
@@ -1522,7 +1537,7 @@ function AddProjectForm() {
         }
 
         const response = await fetchWithLoading(
-          "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getAreas"
+          "https://sheeladecor.netlify.app/.netlify/functions/server/getAreas"
         );
         const data = await response.json();
         setAvailableAreas(data.body);
@@ -1550,14 +1565,14 @@ function AddProjectForm() {
     const pageHeight = doc.internal.pageSize.getHeight();
     let yOffset = 20;
 
-    // Setting up fonts and colors
+    // Colors and fonts
     doc.setFont("helvetica", "normal");
     const primaryColor = [0, 51, 102];
     const secondaryColor = [33, 33, 33];
     const accentColor = [0, 102, 204];
     const lightGray = [245, 245, 245];
 
-    // Header Section
+    // Header
     doc.setFillColor(...primaryColor);
     doc.rect(0, 0, pageWidth, 30, "F");
     doc.setFillColor(...accentColor);
@@ -1577,19 +1592,19 @@ function AddProjectForm() {
     doc.text("123 Business Street, City, Country", 15, yOffset);
     yOffset += 5;
     doc.text(
-      "Email: contact@sahanipaintsbackend.com | Phone: +123 456 7890",
+      "Email: contact@sheeladecor.com | Phone: +123 456 7890",
       15,
       yOffset
     );
     yOffset += 8;
 
-    // Divider Line
+    // Divider
     doc.setDrawColor(...accentColor);
     doc.setLineWidth(0.4);
     doc.line(15, yOffset, pageWidth - 15, yOffset);
     yOffset += 8;
 
-    // Project and Customer Details
+    // Project and Customer Details Box
     doc.setFillColor(...lightGray);
     doc.roundedRect(15, yOffset, pageWidth - 30, 25, 2, 2, "F");
     doc.setFontSize(10);
@@ -1597,6 +1612,7 @@ function AddProjectForm() {
     doc.setTextColor(...primaryColor);
     doc.text("Project Details", 20, yOffset + 6);
     doc.text("Customer Details", pageWidth / 2 + 5, yOffset + 6);
+
     yOffset += 12;
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...secondaryColor);
@@ -1616,12 +1632,12 @@ function AddProjectForm() {
     );
     yOffset += 10;
 
-    // Table Data Preparation
-    const tableData = [];
+    // Table Data
+    const tableData: any[] = [];
     let srNo = 1;
 
-    selections.forEach((selection, mainIndex) => {
-      if (selection.areacollection && selection.areacollection.length > 0) {
+    selections.forEach((selection) => {
+      if (selection.areacollection?.length > 0) {
         tableData.push([
           {
             content: selection.area,
@@ -1635,40 +1651,36 @@ function AddProjectForm() {
           },
         ]);
 
-        selection.areacollection.forEach((collection, collectionIndex) => {
+        selection.areacollection.forEach((collection) => {
           const pg = collection.productGroup;
           if (!Array.isArray(pg) || pg.length < 2) return;
-          const relevantPG = pg.length > 2 ? pg.slice(1, -2) : null;
-          const matchedItems = relevantPG.map((pgItem) => {
-            const matched = items.find((item) => item[0] === pgItem);
-            return matched || null;
-          });
-          const validMatchedItems = matchedItems.filter((item) =>
-            Array.isArray(item)
-          );
-          validMatchedItems.forEach((item, itemIndex) => {
-            const qty = parseFloat(collection.quantities?.[itemIndex]) || 0;
-            const productName = item[0]
-              ? `${item[0]} * ${collection.measurement.quantity || 0}`
-              : "N/A";
+
+          const relevantPG = pg.slice(1, -2);
+          relevantPG.forEach((pgItem, index) => {
+            const item = items.find((it) => it[0] === pgItem);
+            if (!item) return;
+
+            const qty = parseFloat(collection.quantities?.[index]) || 0;
+            const measurementQty = parseFloat(
+              collection.measurement?.quantity || "0"
+            );
             const size =
-              collection.measurement?.width && collection.measurement?.height
+              collection.measurement.width && collection.measurement.height
                 ? `${collection.measurement.width} x ${
                     collection.measurement.height
                   } ${collection.measurement.unit || ""}`
                 : "N/A";
-            const mrp =
-              parseFloat(item[4]) *
-                parseFloat(collection.measurement.quantity || "0") || 0;
-            const subtotal = mrp * qty || 0;
+            const mrp = parseFloat(item[4]) * measurementQty;
+            const subtotal = mrp * qty;
             const taxRate = parseFloat(item[5]) || 0;
             const taxAmount =
-              parseFloat(collection.totalTax[itemIndex]?.toString()) || 0;
+              parseFloat(collection.totalTax?.[index]?.toString()) || 0;
             const total =
-              parseFloat(collection.totalAmount[itemIndex]?.toString()) || 0;
+              parseFloat(collection.totalAmount?.[index]?.toString()) || 0;
+
             tableData.push([
               srNo++,
-              productName,
+              `${item[0]} * ${measurementQty}`,
               size,
               `INR ${mrp.toFixed(2)}`,
               qty.toString(),
@@ -1696,60 +1708,71 @@ function AddProjectForm() {
         },
       ]);
 
-      additionalItems.forEach((item) => {
+      additionalItems.forEach((item, idx) => {
         const qty = parseFloat(item.quantity?.toString()) || 0;
         const rate = parseFloat(item.rate?.toString()) || 0;
         const netRate = parseFloat(item.netRate?.toString()) || 0;
         const tax = parseFloat(item.tax?.toString()) || 0;
         const taxAmount = parseFloat(item.taxAmount?.toString()) || 0;
         const totalAmount = parseFloat(item.totalAmount?.toString()) || 0;
+
         tableData.push([
           srNo++,
-          item.name || "N/A",
-          "N/A",
+          item.name || `Misc Item ${idx + 1}`,
+          item.description || item.remark || "N/A",
           `INR ${rate.toFixed(2)}`,
           qty.toString(),
           `INR ${netRate.toFixed(2)}`,
-          `${tax.toFixed(2)}%`,
+          `${tax.toFixed(0)}%`,
           `INR ${taxAmount.toFixed(2)}`,
           `INR ${totalAmount.toFixed(2)}`,
         ]);
       });
     }
 
-    // Table Rendering
+    // Improved wider table layout
     autoTable(doc, {
       startY: yOffset,
       head: [
         [
           "Sr. No.",
-          "Product Name",
-          "Size",
-          "MRP",
+          "Item Name",
+          "Description",
+          "Rate",
           "Qty",
-          "Subtotal",
+          "Net Rate",
           "Tax Rate",
           "Tax Amount",
           "Total",
         ],
       ],
-      body: tableData,
+      body:
+        tableData.length > 0
+          ? tableData
+          : [
+              [
+                {
+                  content: "No product data available.",
+                  colSpan: 9,
+                  styles: { halign: "center" },
+                },
+              ],
+            ],
       theme: "grid",
       styles: {
         font: "helvetica",
-        fontSize: 6.5,
+        fontSize: 7.5,
         cellPadding: 1.5,
         textColor: secondaryColor,
         lineColor: [200, 200, 200],
         lineWidth: 0.1,
         overflow: "linebreak",
-        minCellHeight: 0,
       },
       headStyles: {
         fillColor: primaryColor,
         textColor: [255, 255, 255],
         fontStyle: "bold",
-        fontSize: 7,
+        fontSize: 8,
         halign: "center",
         cellPadding: 1.5,
       },
@@ -1757,26 +1780,15 @@ function AddProjectForm() {
         fillColor: lightGray,
       },
       columnStyles: {
-        "0": { cellWidth: 7, halign: "center" },
-        "1": { cellWidth: 35, overflow: "linebreak" },
-        "2": { cellWidth: 20, overflow: "linebreak" },
-        "3": { cellWidth: 15, halign: "right" },
-        "4": { cellWidth: 8, halign: "center" },
-        "5": { cellWidth: 15, halign: "right" },
-        "6": { cellWidth: 10, halign: "center" },
-        "7": { cellWidth: 15, halign: "right" },
-        "8": { cellWidth: 15, halign: "right" },
-      },
-      margin: { top: yOffset, left: 15, right: 15, bottom: 50 },
-      pageBreak: "auto",
-      rowPageBreak: "avoid",
-      didDrawPage: (data) => {
-        yOffset = data.cursor.y + 10;
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Page ${data.pageNumber}`, pageWidth - 15, pageHeight - 10, {
-          align: "right",
-        });
+        0: { cellWidth: 10, halign: "center" },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 22, halign: "right" },
+        4: { cellWidth: 12, halign: "center" },
+        5: { cellWidth: 22, halign: "right" },
+        6: { cellWidth: 12, halign: "center" },
+        7: { cellWidth: 15, halign: "right" },
+        8: { cellWidth: 22, halign: "right" },
       },
       willDrawCell: (data) => {
         if (
@@ -1789,25 +1801,21 @@ function AddProjectForm() {
           }
         }
       },
-      didParseCell: (data) => {
-        if (
-          data.section === "body" &&
-          [3, 5, 7, 8].includes(data.column.index)
-        ) {
-          data.cell.text = data.cell.text.map((text) =>
-            text.replace(/^1\s*/, "")
-          ); // Remove leading "1"
-        }
-      },
     });
 
-    yOffset = doc.lastAutoTable.finalY + 10;
+    const tableEndY = (doc as any).lastAutoTable.finalY;
+    const summaryBoxHeight = 50;
+    const footerHeight = 25;
+    const bottomMargin = footerHeight + 10;
 
-    // Summary Section
-    if (yOffset + 60 > pageHeight - 50) {
+    // Smart placement for Summary Box
+    if (tableEndY + summaryBoxHeight + bottomMargin > pageHeight) {
       doc.addPage();
       yOffset = 15;
+    } else {
+      yOffset = tableEndY + 10;
     }
+
     doc.setFillColor(...lightGray);
     doc.roundedRect(pageWidth - 90, yOffset - 5, 75, 50, 2, 2, "F");
     doc.setFontSize(10);
@@ -1819,18 +1827,14 @@ function AddProjectForm() {
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...secondaryColor);
+
     const numericAmount = Number(amount) || 0;
     const numericTax = Number(tax) || 0;
     const numericDiscount = Number(discount) || 0;
-
     const summaryItems = [
-      { label: "Sub Total", value: `INR ${numericAmount.toFixed(2)}` },
-      { label: "Total Tax", value: `INR ${numericTax.toFixed(2)}` },
-      {
-        label: "Total Amount",
-        value: `INR ${(numericAmount + numericTax).toFixed(2)}`,
-      },
+      { label: "Total Amount", value: `INR ${numericAmount.toFixed(2)}` },
       { label: "Discount", value: `INR ${numericDiscount.toFixed(2)}` },
+      { label: "Total Tax", value: `INR ${numericTax.toFixed(2)}` },
       {
         label: "Grand Total",
         value: `INR ${(numericAmount + numericTax - numericDiscount).toFixed(
@@ -1838,20 +1842,17 @@ function AddProjectForm() {
         )}`,
       },
     ];
-
     summaryItems.forEach((item) => {
       doc.setFont("helvetica", "bold");
       doc.text(item.label, pageWidth - 85, yOffset);
       doc.setFont("helvetica", "normal");
-      doc.text(item.value.replace(/^1\s*/, ""), pageWidth - 20, yOffset, {
-        align: "right",
-      });
+      doc.text(item.value, pageWidth - 20, yOffset, { align: "right" });
       yOffset += 8;
     });
 
-    // Terms and Conditions
+    // Terms & Conditions
     if (termsAndConditions.trim()) {
-      if (yOffset + 30 > pageHeight - 50) {
+      if (yOffset + 30 > pageHeight - footerHeight - 10) {
         doc.addPage();
         yOffset = 15;
       }
@@ -1863,9 +1864,10 @@ function AddProjectForm() {
       yOffset += 5;
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...secondaryColor);
+
       const terms = doc.splitTextToSize(termsAndConditions, pageWidth - 30);
       terms.forEach((term: string) => {
-        if (yOffset + 5 > pageHeight - 50) {
+        if (yOffset + 5 > pageHeight - footerHeight - 10) {
           doc.addPage();
           yOffset = 15;
         }
@@ -1874,37 +1876,34 @@ function AddProjectForm() {
       });
     }
 
-    // Footer
-    if (yOffset + 20 > pageHeight - 50) {
-      doc.addPage();
-      yOffset = 15;
-    }
+    // Footer only on last page
+    const footerY = pageHeight - footerHeight;
     doc.setFillColor(...accentColor);
-    doc.rect(0, pageHeight - 25, pageWidth, 1, "F");
+    doc.rect(0, footerY, pageWidth, 1, "F");
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
     doc.setFont("helvetica", "italic");
     doc.text(
       "Thank you for choosing Sheela Decor!",
       pageWidth / 2,
-      pageHeight - 15,
+      footerY + 10,
       { align: "center" }
     );
     doc.setFont("helvetica", "normal");
     doc.text(
       "Sheela Decor - All Rights Reserved",
       pageWidth / 2,
-      pageHeight - 8,
+      footerY + 17,
       { align: "center" }
     );
 
-    // Save PDF
     doc.save(
       `Quotation_${projectName || "Project"}_${
         projectDate || new Date().toLocaleDateString()
       }.pdf`
     );
   };
+
   const handleMRPChange = (
     mainIndex: number,
     collectionIndex: number,
@@ -2064,155 +2063,6 @@ function AddProjectForm() {
             handleGroupDelete={handleGroupDelete}
           />
         </div>
-
-        {/* Quotation Section */}
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 pl-4 md:pl-4">
-            Quotation
-          </h2>
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <table className="w-full bg-white min-w-[800px]">
-              <thead>
-                <tr className="bg-gray-100 text-gray-700 text-xs sm:text-sm md:text-base font-semibold">
-                  <th className="py-2 px-4 text-center">SR</th>
-                  <th className="py-2 px-4">Area</th>
-                  <th className="py-2 px-4">Product Name</th>
-                  <th className="py-2 px-4">Size</th>
-                  <th className="py-2 px-4">MRP</th>
-                  <th className="py-2 px-4">Quantity</th>
-                  <th className="py-2 px-4">Subtotal</th>
-                  <th className="py-2 px-4">Tax Rate(%)</th>
-                  <th className="py-2 px-4">Tax Amount</th>
-                  <th className="py-2 px-4">Tax Amount</th>
-                  <th className="py-2 px-4">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selections.flatMap((selection, mainIndex) =>
-                  selection.areacollection?.map(
-                    (collection, collectionIndex) => {
-                      const item = collection.items?.[0];
-                      const qty = collection.quantities?.[0] || 0;
-                      if (!item) return null;
-
-                      const calculatedMRP = (
-                        item[4] *
-                        parseFloat(collection.measurement.quantity || "0")
-                      ).toFixed(2);
-                      const subtotal = (
-                        item[4] *
-                        parseFloat(collection.measurement.quantity || "0") *
-                        qty
-                      ).toFixed(2);
-                      const taxAmount =
-                        collection.totalTax?.[0]?.toFixed(2) || "0.00";
-                      const totalAmount =
-                        collection.totalAmount?.[0]?.toFixed(2) || "0.00";
-
-                      return (
-                        <tr
-                          key={`${mainIndex}-${collectionIndex}`}
-                          className="border-b border-gray-200 hover:bg-gray-50"
-                        >
-                          <td className="py-2 px-4 text-center text-sm">
-                            {collectionIndex + 1}
-                          </td>
-                          <td className="py-2 px-4 text-sm">
-                            {selection.area}
-                          </td>
-                          <td className="py-2 px-4 text-sm">
-                            {collection.productGroup?.[0] || "N/A"}
-                          </td>
-                          <td className="py-2 px-4 text-sm">
-                            {collection.measurement.width &&
-                            collection.measurement.height
-                              ? `${collection.measurement.width} x ${
-                                  collection.measurement.height
-                                } ${collection.measurement.unit || ""}`
-                              : "N/A"}
-                          </td>
-                          <td className="py-2 px-4 text-sm">
-                            <input
-                              type="number"
-                              className="w-[120px] border border-gray-300 rounded px-2 py-1 text-sm"
-                              value={calculatedMRP}
-                              onChange={(e) =>
-                                handleMRPChange(
-                                  mainIndex,
-                                  collectionIndex,
-                                  e.target.value,
-                                  collection.measurement.quantity,
-                                  item[5],
-                                  qty
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-2 px-4 text-sm">
-                            <input
-                              type="number"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                              value={qty}
-                              onChange={(e) =>
-                                handleQuantityChange(
-                                  `${mainIndex}-${collectionIndex}`,
-                                  e.target.value,
-                                  mainIndex,
-                                  collectionIndex,
-                                  collection.measurement.quantity,
-                                  parseFloat(item[4]),
-                                  parseFloat(item[5]),
-                                  0
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-2 px-4 text-sm">
-                            INR{" "}
-                            {(
-                              parseFloat(item[4]) *
-                              parseFloat(
-                                collection.measurement.quantity || "0"
-                              ) *
-                              parseFloat(qty || "0")
-                            ).toFixed(2)}
-                          </td>
-
-                          <td className="py-2 px-4 text-sm">
-                            <input
-                              type="number"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                              value={item[5]}
-                              onChange={(e) =>
-                                handleTaxChange(
-                                  mainIndex,
-                                  collectionIndex,
-                                  parseFloat(e.target.value),
-                                  item[4],
-                                  collection.measurement.quantity,
-                                  qty
-                                )
-                              }
-                            />
-                          </td>
-
-                          <td className="py-2 px-4 text-sm">
-                            {item[5] || "0"}%
-                          </td>
-                          <td className="py-2 px-4 text-sm">INR {taxAmount}</td>
-                          <td className="py-2 px-4 text-sm">
-                            INR {totalAmount}
-                          </td>
-                        </tr>
-                      );
-                    }
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         {/* Miscellaneous Section */}
         <div className="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
           <div className="flex justify-between items-center mb-4">
@@ -2426,6 +2276,155 @@ function AddProjectForm() {
             </div>
           </div>
         </div>
+
+        {/* Quotation Section */}
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 pl-4 md:pl-4">
+            Quotation
+          </h2>
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="w-full bg-white min-w-[800px]">
+              <thead>
+                <tr className="bg-gray-100 text-gray-700 text-xs sm:text-sm md:text-base font-semibold">
+                  <th className="py-2 px-4 text-center">SR</th>
+                  <th className="py-2 px-4">Area</th>
+                  <th className="py-2 px-4">Product Name</th>
+                  <th className="py-2 px-4">Size</th>
+                  <th className="py-2 px-4">MRP</th>
+                  <th className="py-2 px-4">Quantity</th>
+                  <th className="py-2 px-4">Subtotal</th>
+                  <th className="py-2 px-4">Tax Rate(%)</th>
+                  <th className="py-2 px-4">Tax Amount</th>
+                  <th className="py-2 px-4">Tax Amount</th>
+                  <th className="py-2 px-4">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selections.flatMap((selection, mainIndex) =>
+                  selection.areacollection?.map(
+                    (collection, collectionIndex) => {
+                      const item = collection.items?.[0];
+                      const qty = collection.quantities?.[0] || 0;
+                      if (!item) return null;
+
+                      const calculatedMRP = (
+                        item[4] *
+                        parseFloat(collection.measurement.quantity || "0")
+                      ).toFixed(2);
+                      const subtotal = (
+                        item[4] *
+                        parseFloat(collection.measurement.quantity || "0") *
+                        qty
+                      ).toFixed(2);
+                      const taxAmount =
+                        collection.totalTax?.[0]?.toFixed(2) || "0.00";
+                      const totalAmount =
+                        collection.totalAmount?.[0]?.toFixed(2) || "0.00";
+
+                      return (
+                        <tr
+                          key={`${mainIndex}-${collectionIndex}`}
+                          className="border-b border-gray-200 hover:bg-gray-50"
+                        >
+                          <td className="py-2 px-4 text-center text-sm">
+                            {collectionIndex + 1}
+                          </td>
+                          <td className="py-2 px-4 text-sm">
+                            {selection.area}
+                          </td>
+                          <td className="py-2 px-4 text-sm">
+                            {collection.productGroup?.[0] || "N/A"}
+                          </td>
+                          <td className="py-2 px-4 text-sm">
+                            {collection.measurement.width &&
+                            collection.measurement.height
+                              ? `${collection.measurement.width} x ${
+                                  collection.measurement.height
+                                } ${collection.measurement.unit || ""}`
+                              : "N/A"}
+                          </td>
+                          <td className="py-2 px-4 text-sm">
+                            <input
+                              type="number"
+                              className="w-[120px] border border-gray-300 rounded px-2 py-1 text-sm"
+                              value={calculatedMRP}
+                              onChange={(e) =>
+                                handleMRPChange(
+                                  mainIndex,
+                                  collectionIndex,
+                                  e.target.value,
+                                  collection.measurement.quantity,
+                                  item[5],
+                                  qty
+                                )
+                              }
+                            />
+                          </td>
+                          <td className="py-2 px-4 text-sm">
+                            <input
+                              type="number"
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                              value={qty}
+                              onChange={(e) =>
+                                handleQuantityChange(
+                                  `${mainIndex}-${collectionIndex}`,
+                                  e.target.value,
+                                  mainIndex,
+                                  collectionIndex,
+                                  collection.measurement.quantity,
+                                  parseFloat(item[4]),
+                                  parseFloat(item[5]),
+                                  0
+                                )
+                              }
+                            />
+                          </td>
+                          <td className="py-2 px-4 text-sm">
+                            INR{" "}
+                            {(
+                              parseFloat(item[4]) *
+                              parseFloat(
+                                collection.measurement.quantity || "0"
+                              ) *
+                              parseFloat(qty || "0")
+                            ).toFixed(2)}
+                          </td>
+
+                          <td className="py-2 px-4 text-sm">
+                            <input
+                              type="number"
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                              value={item[5]}
+                              onChange={(e) =>
+                                handleTaxChange(
+                                  mainIndex,
+                                  collectionIndex,
+                                  parseFloat(e.target.value),
+                                  item[4],
+                                  collection.measurement.quantity,
+                                  qty
+                                )
+                              }
+                            />
+                          </td>
+
+                          <td className="py-2 px-4 text-sm">
+                            {item[5] || "0"}%
+                          </td>
+                          <td className="py-2 px-4 text-sm">INR {taxAmount}</td>
+                          <td className="py-2 px-4 text-sm">
+                            INR {totalAmount}
+                          </td>
+                        </tr>
+                      );
+                    }
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Summary and Bank Details */}
         <div className="flex flex-col md:flex-row gap-6">
           {/* Bank Details and Terms */}

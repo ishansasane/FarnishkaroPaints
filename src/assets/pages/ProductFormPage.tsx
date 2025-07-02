@@ -7,7 +7,7 @@ import { fetchWithLoading } from "../Redux/fetchWithLoading";
 
 const getItemsData = async () => {
   const response = await fetchWithLoading(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsingleproducts"
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssingleproducts"
   );
   const data = await response.json();
   return data.body;
@@ -78,7 +78,7 @@ const ProductFormPage: React.FC = () => {
       const date = `${day}/${month}/${year}`;
 
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addnewproduct",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/addpaintsnewproduct",
         {
           method: "POST",
           headers: {

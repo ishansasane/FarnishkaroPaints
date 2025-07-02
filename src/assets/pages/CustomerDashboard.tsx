@@ -13,7 +13,7 @@ import { fetchWithLoading } from "../Redux/fetchWithLoading";
 async function fetchCustomers() {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcustomerdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
       { credentials: "include" }
     );
 
@@ -31,7 +31,7 @@ async function fetchCustomers() {
 
 const fetchPaymentData = async () => {
   const response = await fetchWithLoading(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getPayments"
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsPayments"
   );
   const data = await response.json();
   return data.message;
@@ -39,7 +39,7 @@ const fetchPaymentData = async () => {
 
 const fetchProjectData = async () => {
   const response = await fetchWithLoading(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
     {
       credentials: "include",
     }
@@ -279,7 +279,7 @@ const CustomerDashboard = ({
     date = now.toISOString().slice(0, 16);
 
     const api =
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatecustomerdata";
+      "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintscustomerdata";
 
     const response = await fetchWithLoading(api, {
       method: "POST",

@@ -17,7 +17,7 @@ const ProjectDetails = () => {
   async function fetchInteriors() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getinteriordata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsinteriordata",
         {
           credentials: "include",
         }
@@ -38,7 +38,7 @@ const ProjectDetails = () => {
   async function fetchSalesAssociates() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsalesassociatedata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssalesassociatedata",
         {
           credentials: "include",
         }

@@ -23,7 +23,7 @@ import { fetchWithLoading } from "../Redux/fetchWithLoading.ts";
 
 const fetchTaskData = async () => {
   const response = await fetchWithLoading(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettasks"
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintstasks"
   );
   const data = await response.json();
   if (data.body) {
@@ -35,7 +35,7 @@ const fetchTaskData = async () => {
 
 const fetchInquiryData = async () => {
   const response = await fetchWithLoading(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getInquiry"
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsInquiry"
   );
   const data = await response.json();
   if (data.body) {
@@ -87,7 +87,7 @@ const Dashboard: React.FC = () => {
 
     // ✅ Proceed to send the inquiry
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendInquiry",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/sendPaintsInquiry",
       {
         method: "POST",
         headers: {
@@ -151,7 +151,7 @@ const Dashboard: React.FC = () => {
   const deleteTask = async (name: string) => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletetask",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintstask",
         {
           method: "POST",
           headers: {
@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
         }
 
         const taskRes = await fetchWithLoading(
-          "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettasks",
+          "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintstasks",
           {
             credentials: "include",
           }
@@ -266,7 +266,7 @@ const Dashboard: React.FC = () => {
   const fetchProjectData = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
         {
           credentials: "include",
         }
@@ -371,7 +371,7 @@ const Dashboard: React.FC = () => {
   const fetchPaymentData = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getPayments"
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsPayments"
       );
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -466,7 +466,7 @@ const Dashboard: React.FC = () => {
   const handleMarkAsCompleted = async (status, name) => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatetask",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintstask",
         {
           method: "POST",
           headers: {
@@ -589,7 +589,7 @@ const Dashboard: React.FC = () => {
   };
   const handleDeleteInquiry = async (projectName) => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deleteInquiry",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsInquiry",
       {
         method: "POST",
         headers: {
@@ -611,7 +611,7 @@ const Dashboard: React.FC = () => {
 
   const handleMarkAsApproved = async (projectName, status) => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateInquiry",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintsInquiry",
       {
         method: "POST",
         headers: {
@@ -634,7 +634,7 @@ const Dashboard: React.FC = () => {
 
   const handleStatusChange = async (projectName, status) => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateInquiry",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintsInquiry",
       {
         method: "POST",
         headers: {

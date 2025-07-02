@@ -21,7 +21,7 @@ const BankDetails = () => {
     try {
       setIsLoading(true);
       const response = await fetch(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getBankData"
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsBankData"
       );
       const data = await response.json();
       return data.body || [];
@@ -53,8 +53,8 @@ const BankDetails = () => {
       }/${date.getFullYear()}`;
 
       const url = editBankData
-        ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateBankData"
-        : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendBankData";
+        ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintsBankData"
+        : "https://sheeladecor.netlify.app/.netlify/functions/server/sendPaintsBankData";
 
       const response = await fetch(url, {
         method: "POST",
@@ -93,7 +93,7 @@ const BankDetails = () => {
     try {
       setIsLoading(true);
       const response = await fetch(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deleteBankData",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsBankData",
         {
           method: "POST",
           headers: { "content-type": "application/json" },

@@ -181,7 +181,7 @@ const EditProjects = ({
 
   const fetchTaskData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettasks"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintstasks"
     );
     const data = await response.json();
     return data.body;
@@ -189,7 +189,7 @@ const EditProjects = ({
 
   const getItemsData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsingleproducts"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssingleproducts"
     );
 
     const data = await response.json();
@@ -200,7 +200,7 @@ const EditProjects = ({
   const fetchCustomers = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcustomerdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
         { credentials: "include" }
       );
 
@@ -219,7 +219,7 @@ const EditProjects = ({
   async function fetchAllAreas() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getAreas",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsAreas",
         {
           credentials: "include",
         }
@@ -240,7 +240,7 @@ const EditProjects = ({
   async function fetchCatalogues() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcatalogues",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getcatalogues",
         {
           credentials: "include",
         }
@@ -261,7 +261,7 @@ const EditProjects = ({
   async function fetchInteriors() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getinteriordata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsinteriordata",
         {
           credentials: "include",
         }
@@ -282,7 +282,7 @@ const EditProjects = ({
   async function fetchSalesAssociates() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsalesassociatedata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssalesassociatedata",
         {
           credentials: "include",
         }
@@ -304,7 +304,7 @@ const EditProjects = ({
   async function fetchProductGroups(): Promise<ProductGroup[]> {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getallproductgroup",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getallproductgroup",
         {
           credentials: "include",
         }
@@ -323,14 +323,14 @@ const EditProjects = ({
   }
   const fetchTermsData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getTermsData"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsTermsData"
     );
     const data = await response.json();
     return data.body || [];
   };
   const fetchBankData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getBankData"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsBankData"
     );
     const data = await response.json();
     return data.body || [];
@@ -466,7 +466,7 @@ const EditProjects = ({
       fetchAndSetData(
         async () => {
           const response = await fetchWithLoading(
-            "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsingleproducts",
+            "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssingleproducts",
             { credentials: "include" }
           );
           const data = await response.json();
@@ -1372,7 +1372,7 @@ const EditProjects = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchPaymentData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getPayments"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsPayments"
     );
     const data = await response.json();
     return data.message;
@@ -1380,7 +1380,7 @@ const EditProjects = ({
 
   const fetchTailorData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettailors"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/gettailors"
     );
     const data = await response.json();
     return data.body;
@@ -1459,7 +1459,7 @@ const EditProjects = ({
 
         // If no valid cached data, fetch from the API
         const response = await fetchWithLoading(
-          "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getAreas"
+          "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsAreas"
         );
         const data = await response.json();
         setAvailableAreas(data.body);
@@ -1484,8 +1484,8 @@ const EditProjects = ({
     const isEdit = typeof editProjects !== "undefined";
 
     const url = isEdit
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatePayments"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addPayment";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintsPayments"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/addPaintsPayment";
 
     const payload = {
       customerName: projectData.customerLink[0],
@@ -1535,7 +1535,7 @@ const EditProjects = ({
 
   const deletePayment = async (p, pd, pm, re) => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletePayment",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsPayment",
       {
         credentials: "include",
         method: "POST",
@@ -1599,7 +1599,7 @@ const EditProjects = ({
 
   const deleteTask = async (name: string) => {
     await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletetask",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintstask",
       {
         method: "POST",
         headers: {
@@ -1749,7 +1749,7 @@ const EditProjects = ({
 
   const fetchProjectData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
       {
         credentials: "include",
       }
@@ -1831,7 +1831,7 @@ const EditProjects = ({
   const sendProjectData = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateprojectdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintsprojectdata",
         {
           method: "POST",
           credentials: "include",

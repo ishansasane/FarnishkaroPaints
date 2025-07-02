@@ -21,7 +21,7 @@ interface Customer {
 async function fetchCustomers(): Promise<Customer[]> {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcustomerdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
       { credentials: "include" }
     );
 
@@ -54,7 +54,7 @@ export default function Customers() {
 
   async function deleteCustomer(name: string) {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletecustomerdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletepaintscustomerdata",
       {
         method: "POST",
         headers: {

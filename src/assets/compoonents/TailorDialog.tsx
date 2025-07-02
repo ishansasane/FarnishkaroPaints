@@ -26,8 +26,8 @@ const TailorDialog: React.FC<TailorDialogProps> = ({
 
   const handleSubmit = async () => {
     const url = editingTailor
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatetailor"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addtailor";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatetailor"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/addtailor";
     const method = "POST";
 
     const response = await fetchWithLoading(url, {

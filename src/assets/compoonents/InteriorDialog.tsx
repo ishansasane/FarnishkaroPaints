@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux"; // Add this import
 import { fetchWithLoading } from "../Redux/fetchWithLoading";
+import { RootState } from "../Redux/Store"; // Make sure to import RootState
+import { setInteriorData } from "../Redux/dataSlice"; // Import your action
 
 interface InteriorDialogProps {
   setDialogOpen: (open: boolean) => void;
@@ -13,7 +16,7 @@ interface InteriorDialogProps {
 async function fetchInteriors() {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getinteriordata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsinteriordata",
       { credentials: "include" }
     );
     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -46,7 +49,6 @@ const InteriorDialog: React.FC<InteriorDialogProps> = ({
   );
 
   const handleSubmit = async () => {
-    // ✅ Duplicate check for Add
     if (!editingInterior) {
       const duplicate = interiors.find(
         (interior) =>
@@ -63,8 +65,8 @@ const InteriorDialog: React.FC<InteriorDialogProps> = ({
     }
 
     const url = editingInterior
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateinteriordata"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendinteriordata";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintsinteriordata"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/sendpaintsinteriordata";
 
     try {
       const response = await fetchWithLoading(url, {
@@ -107,17 +109,14 @@ const InteriorDialog: React.FC<InteriorDialogProps> = ({
 
   return (
     <>
-      {/* ✅ Background Overlay */}
       <div className="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
 
-      {/* ✅ Dialog */}
       <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md">
         <div className="bg-white p-6 rounded shadow-md w-full border">
           <h2 className="text-xl font-bold mb-4">
             {editingInterior ? "Edit Interior" : "Add Interior"}
           </h2>
 
-          {/* ✅ Name Field (hide during edit if needed) */}
           <input
             className={`${
               editingInterior ? "hidden" : ""

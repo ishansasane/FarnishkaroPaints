@@ -33,7 +33,7 @@ const FormPage = () => {
   const fetchCustomers = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcustomerdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
         { credentials: "include" }
       );
 

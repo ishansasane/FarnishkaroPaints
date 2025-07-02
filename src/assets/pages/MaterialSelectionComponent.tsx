@@ -110,7 +110,7 @@ const MaterialSelectionComponent = ({
   const fetchCompanyData = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getCompany",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsCompany",
         {
           credentials: "include",
         }
@@ -129,7 +129,7 @@ const MaterialSelectionComponent = ({
   const fetchDesignData = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getDesign",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsDesign",
         {
           credentials: "include",
         }
@@ -187,7 +187,7 @@ const MaterialSelectionComponent = ({
   async function fetchCatalogues() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcatalogues",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getcatalogues",
         {
           credentials: "include",
         }
@@ -205,7 +205,7 @@ const MaterialSelectionComponent = ({
 
   const addArea = async (name) => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addArea",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/addPaintsArea",
       {
         method: "POST",
         credentials: "include",
@@ -233,7 +233,7 @@ const MaterialSelectionComponent = ({
 
   const addCatalogue = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addcatalogue",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/addcatalogue",
       {
         method: "POST",
         credentials: "include",
@@ -266,7 +266,7 @@ const MaterialSelectionComponent = ({
   const addCompany = async () => {
     const date = new Date();
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendCompany",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/sendPaintsCompany",
       {
         method: "POST",
         credentials: "include",

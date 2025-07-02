@@ -11,7 +11,7 @@ import { fetchWithLoading } from "../Redux/fetchWithLoading";
 async function fetchProductGroups() {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getallproductgroup",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getallproductgroup",
       {
         credentials: "include",
       }
@@ -83,7 +83,7 @@ const ProductGroupForm: React.FC = () => {
 
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addproductgroup",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/addproductgroup",
         {
           method: "POST",
           headers: {

@@ -10,7 +10,7 @@ import { fetchWithLoading } from "../Redux/fetchWithLoading";
 async function fetchSalesAssociates(): Promise<string[][]> {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsalesassociatedata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssalesassociatedata",
       {
         credentials: "include",
       }
@@ -36,7 +36,7 @@ async function deleteSalesAssociate(
 ) {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletesalesassociatedata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletepaintssalesassociatedata",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

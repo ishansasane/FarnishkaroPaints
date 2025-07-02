@@ -10,12 +10,28 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { fetchWithLoading } from "../Redux/fetchWithLoading.ts";
 
-const getItemsData = async () => {
-  const response = await fetchWithLoading(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsingleproducts"
-  );
-  const data = await response.json();
-  return data.body;
+interface ItemType extends Array<string | boolean | number> {
+  0: string; // productName
+  1: string; // description
+  2: string; // groupType
+  3: string; // sellingUnit
+  4: string; // mrp
+  5: string; // taxRate
+  6: string; // date
+  7: boolean; // needsTailoring
+}
+
+const getItemsData = async (): Promise<ItemType[]> => {
+  try {
+    const response = await fetchWithLoading(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssingleproducts"
+    );
+    const data = await response.json();
+    return data.body || [];
+  } catch (error) {
+    console.error("Error fetching items:", error);
+    return [];
+  }
 };
 
 const Items = () => {
@@ -27,10 +43,11 @@ const Items = () => {
     ["Fixed length items", ["Piece"]],
     ["Fixed area items", ["Piece", "Roll"]],
     ["Tailoring", ["Parts", "Sq. Feet"]],
-  ];
+  ] as const;
+
   const [search, setSearch] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<ItemType[]>([]);
   const [deleted, setDeleted] = useState(false);
   const [editing, setEditing] = useState(false);
   const [productName, setProductName] = useState("");
@@ -65,7 +82,7 @@ const Items = () => {
     setOpenMenu(openMenu === index ? -1 : index);
   };
 
-  const editMenu = (item: any) => {
+  const editMenu = (item: ItemType) => {
     setIsFormOpen(true);
     setEditing(true);
     setProductName(item[0]);
@@ -74,7 +91,7 @@ const Items = () => {
     setSellingUnit(item[3]);
     setMrp(item[4]);
     setTaxRate(item[5]);
-    setNeedsTailoring(item[7]);
+    setNeedsTailoring(!!item[7]);
   };
 
   // Close dropdown when clicking outside
@@ -118,21 +135,29 @@ const Items = () => {
       const oneHour = 60 * 60 * 1000;
 
       if (cached) {
-        const { data, time } = JSON.parse(cached);
-        if (Date.now() - time < oneHour && Array.isArray(data)) {
-          dispatch(setItemData(data));
-          setItems(data);
-          return;
+        try {
+          const { data, time } = JSON.parse(cached);
+          if (Date.now() - time < oneHour && Array.isArray(data)) {
+            dispatch(setItemData(data));
+            setItems(data);
+            return;
+          }
+        } catch (error) {
+          console.error("Error parsing cached data:", error);
         }
       }
 
-      const freshData = await getItemsData();
-      dispatch(setItemData(freshData));
-      setItems(freshData);
-      localStorage.setItem(
-        "itemData",
-        JSON.stringify({ data: freshData, time: Date.now() })
-      );
+      try {
+        const freshData = await getItemsData();
+        dispatch(setItemData(freshData));
+        setItems(freshData);
+        localStorage.setItem(
+          "itemData",
+          JSON.stringify({ data: freshData, time: Date.now() })
+        );
+      } catch (error) {
+        console.error("Error fetching fresh data:", error);
+      }
     };
 
     fetchData();
@@ -141,7 +166,7 @@ const Items = () => {
   const deleteItem = async (name: string) => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletesingleproduct",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/deletepaintssingleproduct",
         {
           method: "POST",
           headers: {
@@ -171,13 +196,12 @@ const Items = () => {
     }
   };
 
-  const duplicateItem = async (item: Array<string>, index: number) => {
-    let date = new Date();
+  const duplicateItem = async (item: ItemType, index: number) => {
     const formattedDate = new Date().toLocaleDateString("en-GB");
 
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addnewproduct",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/addpaintsnewproduct",
         {
           method: "POST",
           headers: {
@@ -233,7 +257,7 @@ const Items = () => {
     "Tailoring",
   ];
 
-  const sellingUnits: { [key: string]: string[] } = {
+  const sellingUnits: Record<string, string[]> = {
     Fabric: ["Meter"],
     "Area Based": ["Sq. Feet", "Sq. Meter"],
     "Running length based": ["Meter", "Feet"],
@@ -274,7 +298,7 @@ const Items = () => {
     sellingUnit: "",
     mrp: "",
     taxRate: "",
-    additionalInputs: {},
+    additionalInputs: {} as Record<string, string>,
     sideDropdown: "",
   });
 
@@ -286,7 +310,10 @@ const Items = () => {
       sellingUnit: sellingUnits[selectedGroup]?.[0] || "",
       additionalInputs: additionalFields[selectedGroup]
         ? additionalFields[selectedGroup].reduce(
-            (acc: any, field: string) => ({ ...acc, [field]: "" }),
+            (acc: Record<string, string>, field: string) => ({
+              ...acc,
+              [field]: "",
+            }),
             {}
           )
         : {},
@@ -304,7 +331,7 @@ const Items = () => {
   const editItemData = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatesingleproduct",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintssingleproduct",
         {
           method: "POST",
           headers: {
@@ -355,7 +382,6 @@ const Items = () => {
   };
 
   const handleSubmit = async () => {
-    let date = new Date();
     const formattedDate = new Date().toLocaleDateString("en-GB");
 
     const newItem = {
@@ -374,7 +400,7 @@ const Items = () => {
 
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addnewproduct",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/addpaintsnewproduct",
         {
           method: "POST",
           headers: {
@@ -472,11 +498,11 @@ const Items = () => {
           taxRateValue,
           addedDate,
           needsTailoringValue,
-        ];
+        ] as ItemType;
       });
 
-      // ✅ Improved Validation: Case-insensitive + trimmed matching
-      const validItems = importedItems.filter((item) => {
+      // Improved Validation
+      const validItems = importedItems.filter((item: ItemType) => {
         const productName = item[0]?.toString().trim();
         const groupType = item[2]?.toString().trim().toLowerCase();
         const costingType = item[3]?.toString().trim().toLowerCase();
@@ -502,7 +528,7 @@ const Items = () => {
       }
 
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/importproducts",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/importpaintsproducts",
         {
           method: "POST",
           headers: {
@@ -563,8 +589,12 @@ const Items = () => {
   };
 
   // Export table data as PDF
-  // Export table data as PDF
   const handleExportPDF = () => {
+    if (items.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
     const doc = new jsPDF();
     doc.text("Products List", 14, 20);
     const columns = [
@@ -577,7 +607,7 @@ const Items = () => {
       "Added Date",
       "Needs Tailoring",
     ];
-    const rows = items.map((item: any) => [
+    const rows = items.map((item: ItemType) => [
       item[0] || "",
       item[1] || "",
       item[3] || "",
@@ -600,7 +630,7 @@ const Items = () => {
 
   // Export table data as Excel
   const handleExportExcel = () => {
-    if (!items || items.length === 0) {
+    if (items.length === 0) {
       alert("No data available to export.");
       return;
     }
@@ -616,7 +646,7 @@ const Items = () => {
         "Added Date",
         "Needs Tailoring",
       ];
-      const rows = items.map((item: any) => ({
+      const rows = items.map((item: ItemType) => ({
         "Product Name": item[0] || "",
         Description: item[1] || "",
         "Group Type": item[2] || "",
@@ -658,7 +688,7 @@ const Items = () => {
   };
 
   // Filter items based on search input
-  const filteredItems = items.filter((item: any) =>
+  const filteredItems = items.filter((item: ItemType) =>
     [item[0], item[1], item[2], item[3]]
       .map((field) => (field || "").toString().toLowerCase())
       .some((field) => field.includes(search.toLowerCase()))
@@ -960,10 +990,13 @@ const Items = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredItems &&
-                filteredItems.map((item: any, index: number) => (
+              {filteredItems.length > 0 ? (
+                filteredItems.map((item: ItemType, index: number) => (
                   <tr key={index} className="border-t relative hover:bg-sky-50">
-                    <td onClick={() => editMenu(item)} className="py-2 px-4">
+                    <td
+                      onClick={() => editMenu(item)}
+                      className="py-2 px-4 cursor-pointer"
+                    >
                       {item[0]}
                     </td>
                     <td className="py-2 px-4">{item[1]}</td>
@@ -1014,7 +1047,14 @@ const Items = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="py-4 text-center text-gray-500">
+                    No products found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

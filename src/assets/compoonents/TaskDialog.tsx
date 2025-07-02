@@ -20,7 +20,7 @@ interface TaskDialogProps {
 
 const fetchTaskData = async () => {
   const response = await fetchWithLoading(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettasks"
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintstasks"
   );
   const data = await response.json();
   return data.body || [];
@@ -82,7 +82,7 @@ const TaskDialog: React.FC<TaskDialogProps> = ({
       const date = new Date().toISOString().slice(0, 16);
 
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addtask",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/addPaintstask",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -130,7 +130,7 @@ const TaskDialog: React.FC<TaskDialogProps> = ({
       const date = isEditing[3];
 
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatetask",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintstask",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -15,7 +15,7 @@ interface Tailor {
 async function fetchTailors(): Promise<Tailor[]> {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettailors",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/gettailors",
       {
         credentials: "include",
       }
@@ -42,7 +42,7 @@ async function deleteTailor(
 ) {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletetailor",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletetailor",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -15,7 +15,7 @@ const Login: React.FC = () => {
 
     try {
       const response = await fetch(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/auth/login",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/auth/login",
         {
           method: "POST",
           headers: {

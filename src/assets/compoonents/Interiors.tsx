@@ -15,7 +15,7 @@ interface Interior {
 async function fetchInteriors(): Promise<string[][]> {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getinteriordata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsinteriordata",
       {
         credentials: "include",
       }
@@ -52,7 +52,7 @@ export default function Interiors() {
   async function deleteInterior(name: string) {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deleteinteriordata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/deletepaintsinteriordata",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

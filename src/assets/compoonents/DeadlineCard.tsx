@@ -78,7 +78,7 @@ const DeadlineCard: React.FC<DeadlineCardProps> = ({
 
   const fetchProjectData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
       { credentials: "include" }
     );
 
@@ -146,7 +146,7 @@ const DeadlineCard: React.FC<DeadlineCardProps> = ({
 
   const markAsCompleted = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateprojectdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintsprojectdata",
       {
         method: "POST",
         headers: {

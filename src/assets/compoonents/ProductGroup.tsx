@@ -19,7 +19,7 @@ interface ProductGroup {
 async function fetchProductGroups(): Promise<ProductGroup[]> {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getallproductgroup",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getallproductgroup",
       {
         credentials: "include",
       }
@@ -94,7 +94,7 @@ export default function ProductGroups() {
   async function deleteProductGroup(groupName: string) {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deleteproductgroup",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/deleteproductgroup",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -124,7 +124,7 @@ export default function ProductGroups() {
   const handleEditGroup = async () => {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateproductgroup",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/updateproductgroup",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

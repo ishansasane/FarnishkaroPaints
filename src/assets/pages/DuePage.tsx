@@ -18,7 +18,7 @@ const DuePage = () => {
 
   const fetchProjectData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
       { credentials: "include" }
     );
 
@@ -92,7 +92,7 @@ const DuePage = () => {
 
   const fetchPaymentData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getPayments"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsPayments"
     );
     const data = await response.json();
     return data.message;

@@ -19,7 +19,7 @@ function Reports() {
 
   const fetchProjectData = async () => {
     const response = await fetch(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
       {
         credentials: "include",
       }
@@ -115,7 +115,7 @@ function Reports() {
 
   const fetchTaskData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettasks"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintstasks"
     );
     const data = await response.json();
     if (data.body) {
@@ -210,7 +210,7 @@ function Reports() {
       // ---------- Handle Payments ----------
       try {
         const paymentRes = await fetchWithLoading(
-          "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getPayments",
+          "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsPayments",
           {
             credentials: "include",
           }

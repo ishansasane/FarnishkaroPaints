@@ -28,7 +28,7 @@ const EditProjectDetails = ({
   async function fetchInteriors() {
     try {
       const response = await fetch(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getinteriordata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsinteriordata",
         {
           credentials: "include",
         }
@@ -47,7 +47,7 @@ const EditProjectDetails = ({
   async function fetchSalesAssociates() {
     try {
       const response = await fetch(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getsalesassociatedata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssalesassociatedata",
         {
           credentials: "include",
         }
@@ -78,7 +78,7 @@ const EditProjectDetails = ({
 
   const handleSubmit = async () => {
     const url =
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendinteriordata";
+      "https://sheeladecor.netlify.app/.netlify/functions/server/sendpaintsinteriordata";
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -107,7 +107,7 @@ const EditProjectDetails = ({
 
   const handleSalesSubmit = async () => {
     const url =
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendsalesassociatedata";
+      "https://sheeladecor.netlify.app/.netlify/functions/server/sendpaintssalesassociatedata";
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

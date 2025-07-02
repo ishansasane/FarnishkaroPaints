@@ -76,7 +76,7 @@ export default function Sidebar() {
       >
         <div className="p-4 pb-2 flex justify-between items-center">
           <img
-            src="https://sahanipaintsbackend.free.nf/logo/sahanipaintsbackende.png"
+            src="https://sheeladecor.free.nf/logo/sheeladecore.png"
             className={`overflow-hidden transition-all duration-300 ${
               expanded ? "w-32" : "w-0"
             }`}
@@ -158,11 +158,11 @@ function SidebarContent({
 
   const mastersItems = [
     { text: "Products", path: "/masters/items", icon: <Package size={20} /> },
-    {
-      text: "Product Groups",
-      path: "/masters/product-groups",
-      icon: <Layers size={20} />,
-    },
+    // {
+    //   text: "Product Groups",
+    //   path: "/masters/product-groups",
+    //   icon: <Layers size={20} />,
+    // },
     { text: "Brands", path: "/masters/brands", icon: <Star size={20} /> },
     {
       text: "Paints",
@@ -174,8 +174,8 @@ function SidebarContent({
       path: "/masters/labours",
       icon: <PersonStanding size={20} />,
     },
-    // { text: "Interiors", path: "/masters/interiors", icon: <Home size={20} /> },
-    { text: "Tailors", path: "/masters/tailors", icon: <Scissors size={20} /> },
+    { text: "Interiors", path: "/masters/interiors", icon: <Home size={20} /> },
+    // { text: "Tailors", path: "/masters/tailors", icon: <Scissors size={20} /> },
     {
       text: "Sales Associate",
       path: "/masters/sales-associate",

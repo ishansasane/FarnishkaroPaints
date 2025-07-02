@@ -13,7 +13,7 @@ const InteriorPage = ({ interiorData, setInteriorOpen }) => {
 
   const fetchProjectData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
       {
         credentials: "include",
       }

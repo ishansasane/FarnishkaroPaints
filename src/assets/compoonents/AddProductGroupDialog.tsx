@@ -28,8 +28,8 @@ const ProductGroupDialog: React.FC<ProductGroupDialogProps> = ({
 
   const handleSubmit = async () => {
     const url = editingGroup
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateproductgroup"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addproductgroup";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updateproductgroup"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/addproductgroup";
     const method = editingGroup ? "POST" : "POST";
 
     console.log(needsTailoring);

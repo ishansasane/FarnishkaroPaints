@@ -15,7 +15,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ConfirmBox from "./ConfirmBox";
 import BankDetails from "./BankDetails";
-import { fetchWithLoading } from "../Redux/fetchWithLoading";
 
 // Define the type for a project
 interface Project {
@@ -75,8 +74,8 @@ export default function Projects() {
   const [grandTotal, setGrandTotal] = useState(0);
 
   const fetchProjectData = async () => {
-    const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+    const response = await fetch(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
       {
         credentials: "include",
       }
@@ -158,8 +157,8 @@ export default function Projects() {
   const [added, setAdded] = useState(false);
 
   const fetchPaymentData = async () => {
-    const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getPayments"
+    const response = await fetch(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPayments"
     );
     const data = await response.json();
     return data.message;
@@ -269,8 +268,8 @@ export default function Projects() {
 
   // --- API fetching functions ---
   const fetchTaskData = async () => {
-    const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/gettasks"
+    const response = await fetch(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/gettasks"
     );
     const data = await response.json();
     return data.body || [];
@@ -279,8 +278,8 @@ export default function Projects() {
   const [filteredTasks, setTaskNames] = useState([]);
 
   const deleteTask = async (name: string) => {
-    await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletetask",
+    await fetch(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletetask",
       {
         method: "POST",
         headers: {
@@ -318,8 +317,8 @@ export default function Projects() {
 
   const deleteProject = async (name) => {
     try {
-      const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deleteprojectdata",
+      const response = await fetch(
+        "https://sheeladecor.netlify.app/.netlify/functions/server/deletepaintsprojectdata",
         {
           method: "POST",
           headers: {
@@ -400,63 +399,73 @@ export default function Projects() {
 
   // PDF Generation Function
   const generatePDF = (project: any) => {
-    console.log("Generating PDF for project:", project); // Debugging log
-    console.log("Project additionalItems:", project.additionalItems); // Debugging log
-
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     let yOffset = 20;
 
-    // Setting up fonts and colors
     const primaryColor = [0, 51, 102];
     const secondaryColor = [33, 33, 33];
     const accentColor = [0, 102, 204];
     const lightGray = [245, 245, 245];
 
-    // Header Section
+    // Header
     doc.setFillColor(...primaryColor);
     doc.rect(0, 0, pageWidth, 30, "F");
     doc.setFillColor(...accentColor);
     doc.rect(0, 30, pageWidth, 1, "F");
-    doc.setFontSize(20);
+    doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.text("Quotation", pageWidth / 2, 18, { align: "center" });
 
     // Company Details
     yOffset += 15;
-    doc.setFontSize(10);
-    doc.setTextColor(...secondaryColor);
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...secondaryColor);
     doc.text("Sheela Decor", 15, yOffset);
     yOffset += 5;
     doc.text("123 Business Street, City, Country", 15, yOffset);
     yOffset += 5;
     doc.text(
-      "Email: contact@sahanipaintsbackend.com | Phone: +123 456 7890",
+      "Email: contact@sheeladecor.com | Phone: +123 456 7890",
       15,
       yOffset
     );
     yOffset += 8;
 
-    // Divider Line
+    // Divider
     doc.setDrawColor(...accentColor);
     doc.setLineWidth(0.4);
     doc.line(15, yOffset, pageWidth - 15, yOffset);
     yOffset += 8;
 
     // Project and Customer Details
+    const cleanAddress =
+      typeof project.projectAddress === "string"
+        ? project.projectAddress.replace(/^"(.*)"$/, "$1")
+        : "N/A";
+    const addressLines = doc.splitTextToSize(
+      `Address: ${cleanAddress}`,
+      pageWidth / 2 - 20
+    );
+
+    const detailBoxHeight = Math.max(25, 12 + addressLines.length * 5);
     doc.setFillColor(...lightGray);
-    doc.roundedRect(15, yOffset, pageWidth - 30, 25, 2, 2, "F");
+    doc.roundedRect(15, yOffset, pageWidth - 30, detailBoxHeight, 2, 2, "F");
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...primaryColor);
     doc.text("Project Details", 20, yOffset + 6);
     doc.text("Customer Details", pageWidth / 2 + 5, yOffset + 6);
+
     yOffset += 12;
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
     doc.setTextColor(...secondaryColor);
+
     doc.text(`Project Name: ${project.projectName || "N/A"}`, 20, yOffset);
     doc.text(
       `Customer: ${
@@ -468,12 +477,12 @@ export default function Projects() {
       yOffset
     );
     yOffset += 5;
-    doc.text(
-      `Address: ${project.projectAddress || "N/A"}`,
-      pageWidth / 2 + 5,
-      yOffset
-    );
-    yOffset += 5;
+
+    addressLines.forEach((line: string) => {
+      doc.text(line, pageWidth / 2 + 5, yOffset);
+      yOffset += 5;
+    });
+
     doc.text(
       `Date: ${project.projectDate || new Date().toLocaleDateString()}`,
       20,
@@ -481,18 +490,13 @@ export default function Projects() {
     );
     yOffset += 10;
 
-    // Table Data Preparation
+    // Quotation Items Table
     const tableData: any[] = [];
     let srNo = 1;
 
-    // Process allData (selections)
-    if (Array.isArray(project.allData) && project.allData.length > 0) {
+    if (Array.isArray(project.allData)) {
       project.allData.forEach((selection: any) => {
-        if (
-          selection.areacollection &&
-          Array.isArray(selection.areacollection) &&
-          selection.areacollection.length > 0
-        ) {
+        if (Array.isArray(selection.areacollection)) {
           tableData.push([
             {
               content: selection.area || "Unknown Area",
@@ -505,18 +509,15 @@ export default function Projects() {
               },
             },
           ]);
-
           selection.areacollection.forEach((collection: any) => {
             if (!Array.isArray(collection.items) || !collection.items.length)
               return;
-
             const item = collection.items[0];
             const qty = parseFloat(collection.quantities?.[0]) || 0;
             const measurementQty = parseFloat(
               collection.measurement?.quantity || "0"
             );
             const calculatedMRP = (item[4] * measurementQty).toFixed(2);
-
             tableData.push([
               srNo++,
               `${collection.productGroup?.[0] || "N/A"} * ${
@@ -539,15 +540,10 @@ export default function Projects() {
       });
     }
 
-    // Process additionalItems (Miscellaneous)
     if (
       Array.isArray(project.additionalItems) &&
       project.additionalItems.length > 0
     ) {
-      console.log(
-        "Processing additionalItems for PDF:",
-        project.additionalItems
-      ); // Debugging log
       tableData.push([
         {
           content: "Miscellaneous Items",
@@ -560,16 +556,13 @@ export default function Projects() {
           },
         },
       ]);
-
       project.additionalItems.forEach((item: any, index: number) => {
-        console.log(`Processing item ${index}:`, item); // Debugging log
-        const qty = parseFloat(item.quantity?.toString() || "0") || 0;
-        const rate = parseFloat(item.rate?.toString() || "0") || 0;
-        const netRate = parseFloat(item.netRate?.toString() || "0") || 0;
-        const tax = parseFloat(item.tax?.toString() || "0") || 0;
-        const taxAmount = parseFloat(item.taxAmount?.toString() || "0") || 0;
-        const totalAmount =
-          parseFloat(item.totalAmount?.toString() || "0") || 0;
+        const qty = parseFloat(item.quantity?.toString() || "0");
+        const rate = parseFloat(item.rate?.toString() || "0");
+        const netRate = parseFloat(item.netRate?.toString() || "0");
+        const tax = parseFloat(item.tax?.toString() || "0");
+        const taxAmount = parseFloat(item.taxAmount?.toString() || "0");
+        const totalAmount = parseFloat(item.totalAmount?.toString() || "0");
 
         tableData.push([
           srNo++,
@@ -583,18 +576,8 @@ export default function Projects() {
           `INR ${totalAmount.toFixed(2)}`,
         ]);
       });
-    } else {
-      console.log("No additionalItems available:", project.additionalItems); // Debugging log
-      tableData.push([
-        {
-          content: "No Miscellaneous Items Available",
-          colSpan: 9,
-          styles: { halign: "center", fontSize: 8, textColor: secondaryColor },
-        },
-      ]);
     }
 
-    // Draw Quotation Table
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...primaryColor);
@@ -631,19 +614,18 @@ export default function Projects() {
       theme: "grid",
       styles: {
         font: "helvetica",
-        fontSize: 6.5,
+        fontSize: 9,
         cellPadding: 1.5,
         textColor: secondaryColor,
         lineColor: [200, 200, 200],
         lineWidth: 0.1,
         overflow: "linebreak",
-        minCellHeight: 0,
       },
       headStyles: {
         fillColor: primaryColor,
         textColor: [255, 255, 255],
         fontStyle: "bold",
-        fontSize: 7,
+        fontSize: 9,
         halign: "center",
         cellPadding: 1.5,
       },
@@ -651,26 +633,15 @@ export default function Projects() {
         fillColor: lightGray,
       },
       columnStyles: {
-        0: { cellWidth: 7, halign: "center" },
-        1: { cellWidth: 35, overflow: "linebreak" },
-        2: { cellWidth: 20, overflow: "linebreak" },
-        3: { cellWidth: 15, halign: "right" },
-        4: { cellWidth: 8, halign: "center" },
-        5: { cellWidth: 15, halign: "right" },
-        6: { cellWidth: 10, halign: "center" },
-        7: { cellWidth: 15, halign: "right" },
-        8: { cellWidth: 15, halign: "right" },
-      },
-      margin: { top: yOffset, left: 15, right: 15, bottom: 50 },
-      pageBreak: "auto",
-      rowPageBreak: "avoid",
-      didDrawPage: (data) => {
-        yOffset = data.cursor.y + 10;
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Page ${data.pageNumber}`, pageWidth - 15, pageHeight - 10, {
-          align: "right",
-        });
+        0: { cellWidth: 10, halign: "center" },
+        1: { cellWidth: 38 },
+        2: { cellWidth: 32 },
+        3: { cellWidth: 22, halign: "right" },
+        4: { cellWidth: 12, halign: "center" },
+        5: { cellWidth: 22, halign: "right" },
+        6: { cellWidth: 12, halign: "center" },
+        7: { cellWidth: 12, halign: "right" },
+        8: { cellWidth: 22, halign: "right" },
       },
       willDrawCell: (data) => {
         if (
@@ -683,25 +654,20 @@ export default function Projects() {
           }
         }
       },
-      didParseCell: (data) => {
-        if (
-          data.section === "body" &&
-          [3, 5, 7, 8].includes(data.column.index)
-        ) {
-          data.cell.text = data.cell.text.map((text) =>
-            text.replace(/^1\s*/, "")
-          );
-        }
-      },
     });
 
-    yOffset = (doc as any).lastAutoTable.finalY + 10;
+    // === Smart Summary Placement ===
+    const summaryBoxHeight = 60;
+    const tableEndY = (doc as any).lastAutoTable.finalY;
+    const remainingSpace = pageHeight - tableEndY - 20;
 
-    // Summary Section
-    if (yOffset + 60 > pageHeight - 50) {
+    if (remainingSpace < summaryBoxHeight) {
       doc.addPage();
-      yOffset = 15;
+      yOffset = 20;
+    } else {
+      yOffset = tableEndY + 10;
     }
+
     doc.setFillColor(...lightGray);
     doc.roundedRect(pageWidth - 90, yOffset - 5, 75, 50, 2, 2, "F");
     doc.setFontSize(10);
@@ -710,80 +676,76 @@ export default function Projects() {
     doc.text("Summary", pageWidth - 85, yOffset);
     yOffset += 8;
 
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...secondaryColor);
     const summaryItems = [
-      {
-        label: "Total Tax",
-        value: `INR ${(project.totalTax || 0).toFixed(2)}`,
-      },
       {
         label: "Total Amount",
         value: `INR ${(project.totalAmount || 0).toFixed(2)}`,
       },
       { label: "Discount", value: `INR ${(project.discount || 0).toFixed(2)}` },
       {
+        label: "Total Tax",
+        value: `INR ${(project.totalTax || 0).toFixed(2)}`,
+      },
+      {
         label: "Grand Total",
         value: `INR ${(project.totalAmount || 0).toFixed(2)}`,
       },
     ];
-
     summaryItems.forEach((item) => {
       doc.setFont("helvetica", "bold");
       doc.text(item.label, pageWidth - 85, yOffset);
       doc.setFont("helvetica", "normal");
-      doc.text(item.value.replace(/^1\s*/, ""), pageWidth - 20, yOffset, {
-        align: "right",
-      });
+      doc.text(item.value, pageWidth - 20, yOffset, { align: "right" });
       yOffset += 8;
     });
 
-    // Terms and Conditions (from additionalRequests)
+    // Terms & Conditions (Skip any standalone date lines)
     if (
       typeof project.additionalRequests === "string" &&
       project.additionalRequests.trim()
     ) {
-      console.log(
-        "Terms and Conditions from additionalRequests:",
-        project.additionalRequests
-      ); // Debugging log
       if (yOffset + 30 > pageHeight - 50) {
         doc.addPage();
-        yOffset = 15;
+        yOffset = 20;
       }
       yOffset += 5;
-      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
       doc.setTextColor(...primaryColor);
       doc.text("Terms & Conditions", 15, yOffset);
       yOffset += 5;
       doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
       doc.setTextColor(...secondaryColor);
+
       const terms = doc.splitTextToSize(
         project.additionalRequests,
         pageWidth - 30
       );
+      const datePattern = /^\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s*$/;
+
       terms.forEach((term: string) => {
+        if (datePattern.test(term.trim())) return;
         if (yOffset + 5 > pageHeight - 50) {
           doc.addPage();
-          yOffset = 15;
+          yOffset = 20;
         }
         doc.text(`• ${term}`, 15, yOffset);
         yOffset += 5;
       });
-    } else {
-      console.log("No Terms and Conditions available in additionalRequests"); // Debugging log
     }
 
     // Footer
     if (yOffset + 20 > pageHeight - 50) {
       doc.addPage();
-      yOffset = 15;
+      yOffset = 20;
     }
     doc.setFillColor(...accentColor);
     doc.rect(0, pageHeight - 25, pageWidth, 1, "F");
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.setFont("helvetica", "italic");
     doc.text(
@@ -800,7 +762,6 @@ export default function Projects() {
       { align: "center" }
     );
 
-    // Save PDF
     const safeProjectName = (project.projectName || "Project").replace(
       /[^a-zA-Z0-9]/g,
       "_"
@@ -817,11 +778,18 @@ export default function Projects() {
     <div className={`md:!p-6 p-2 md:mt-0 mt-20 h-screen bg-gray-50`}>
       <div className={`flex justify-between flex-wrap items-center mb-4`}>
         <h1 className="text-2xl font-bold">Projects</h1>
-        <Link to="/add-project">
-          <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 !rounded-md">
-            <Plus size={18} /> Add Project
-          </button>
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/add-project">
+            <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 !rounded-md">
+              <Plus size={18} /> Add Project
+            </button>
+          </Link>
+          <Link to="/add-site">
+            <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 !rounded-md">
+              <Plus size={18} /> Add Site
+            </button>
+          </Link>
+        </div>
       </div>
       <div className="bg-white md:!p-6 p-2 mt-5 md:mt-0 rounded-md shadow overflow-x-auto">
         <div className={`${flag ? "hidden" : ""} mb-4 flex gap-4`}>

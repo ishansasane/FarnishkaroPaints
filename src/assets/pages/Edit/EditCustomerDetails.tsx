@@ -28,7 +28,7 @@ const EditCustomerDetails = ({
   async function fetchCustomers() {
     try {
       const response = await fetch(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcustomerdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
         { credentials: "include" }
       );
       if (!response.ok) {
@@ -59,7 +59,7 @@ const EditCustomerDetails = ({
     date = now.toISOString().slice(0, 16);
 
     const api =
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendcustomerdata";
+      "https://sheeladecor.netlify.app/.netlify/functions/server/sendpaintscustomerdata";
 
     const response = await fetch(api, {
       method: "POST",

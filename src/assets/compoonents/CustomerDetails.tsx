@@ -32,7 +32,7 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
   async function fetchCustomers() {
     try {
       const response = await fetchWithLoading(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getcustomerdata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintscustomerdata",
         { credentials: "include" }
       );
 

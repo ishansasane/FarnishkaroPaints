@@ -15,7 +15,7 @@ interface Store {
 
 async function getStoreData(): Promise<Store[]> {
   const response = await fetchWithLoading(
-    "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getallstores",
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsallstores",
     {
       credentials: "include",
     }
@@ -63,8 +63,8 @@ const Store: React.FC = () => {
     newStorePhone
   ) => {
     const url = editingStore
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatestore"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addstore";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintsstore"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/addpaintsstore";
 
     await fetchWithLoading(url, {
       method: "POST",
@@ -112,7 +112,7 @@ const Store: React.FC = () => {
     const storeName = store.name || store[0];
 
     await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletestore",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletepaintsstore",
       {
         method: "POST",
         headers: { "content-type": "application/json" },

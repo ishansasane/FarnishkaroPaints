@@ -54,7 +54,7 @@ function Register() {
     }
 
     const response = await fetch(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/auth/register",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/auth/register",
       {
         method: "POST",
         headers: {

@@ -18,7 +18,7 @@ function VerifyMail() {
 
     try {
       const response = await fetch(
-        "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/auth/verifymail",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/auth/verifymail",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -15,7 +15,7 @@ function ColourPage() {
 
   useEffect(() => {
     fetchWithLoading(
-      "https://sheeladecor.netlify.app/.netlify/functions/server/getprojectdata"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata"
     )
       .then((res) => res.json())
       .then((data) => {

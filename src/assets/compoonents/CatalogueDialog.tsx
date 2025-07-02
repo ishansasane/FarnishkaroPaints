@@ -46,8 +46,8 @@ const CatalogueDialog: React.FC<CatalogueDialogProps> = ({
     }
 
     const url = editingCatalogue
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatecatalogue"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addcatalogue";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatecatalogue"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/addcatalogue";
 
     const response = await fetchWithLoading(url, {
       method: "POST",

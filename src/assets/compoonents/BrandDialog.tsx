@@ -16,7 +16,7 @@ interface BrandDialogProps {
 async function fetchBrands() {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getbrands",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsbrands",
       { credentials: "include" }
     );
     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -61,8 +61,8 @@ const BrandDialog: React.FC<BrandDialogProps> = ({
     }
 
     const url = editingBrand
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updatebrand"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addbrand";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintsbrand"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/addpaintsbrand";
 
     try {
       const response = await fetchWithLoading(url, {

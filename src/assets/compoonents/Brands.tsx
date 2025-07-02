@@ -10,7 +10,7 @@ import { fetchWithLoading } from "../Redux/fetchWithLoading";
 async function fetchBrands() {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getbrands",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsbrands",
       { credentials: "include" }
     );
 
@@ -47,7 +47,7 @@ async function deleteBrand(
 ) {
   try {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletebrand",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletepaintsbrand",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

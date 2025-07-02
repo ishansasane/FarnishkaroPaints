@@ -13,7 +13,7 @@ const TermsAndConditions = () => {
 
   const fetchTermsData = async () => {
     const response = await fetch(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getTermsData"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsTermsData"
     );
     const data = await response.json();
     return data.body || [];
@@ -26,7 +26,7 @@ const TermsAndConditions = () => {
     }/${date.getFullYear()}`;
 
     const response = await fetch(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/sendTermsData",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/sendPaintsTermsData",
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -51,7 +51,7 @@ const TermsAndConditions = () => {
 
   const deleteTermsData = async (terms: string) => {
     const response = await fetch(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deleteTermsData",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsTermsData",
       {
         method: "POST",
         headers: { "content-type": "application/json" },

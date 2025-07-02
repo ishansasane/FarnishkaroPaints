@@ -9,7 +9,7 @@ import { fetchWithLoading } from "../Redux/fetchWithLoading";
 const Payments = () => {
   const fetchPaymentData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getPayments"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsPayments"
     );
     const data = await response.json();
     return data.message;
@@ -35,7 +35,7 @@ const Payments = () => {
 
   const fetchProjectData = async () => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/getprojectdata",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
       { credentials: "include" }
     );
 
@@ -186,7 +186,7 @@ const Payments = () => {
 
   const deletePayment = async (name, projectname, p, pd, pm, re) => {
     const response = await fetchWithLoading(
-      "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/deletePayment",
+      "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsPayment",
       {
         credentials: "include",
         method: "POST",
@@ -215,8 +215,8 @@ const Payments = () => {
   const addPaymentFunction = async () => {
     const isEdit = typeof editPayments !== "undefined";
     const url = isEdit
-      ? "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/updateProjects"
-      : "https://sahanipaintsbackend.netlify.app/.netlify/functions/server/addPayment";
+      ? "https://sheeladecor.netlify.app/.netlify/functions/server/updateProjects"
+      : "https://sheeladecor.netlify.app/.netlify/functions/server/addPaintsPayment";
 
     const payload = {
       customerName: customer,
