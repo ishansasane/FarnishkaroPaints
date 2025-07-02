@@ -381,14 +381,15 @@ const EditProjects = ({
   }, [dispatch]);
 
   useEffect(() => {
-    const clonedSelections = JSON.parse(
-      JSON.stringify(projectData.allData || [])
-    );
-    const clonedAdditionalItems = JSON.parse(
-      JSON.stringify(projectData.additionalItems || [])
-    );
+    const clonedSelections = Array.isArray(projectData.allData)
+      ? JSON.parse(JSON.stringify(projectData.allData))
+      : [];
 
+    const clonedAdditionalItems = Array.isArray(projectData.additionalItems)
+      ? JSON.parse(JSON.stringify(projectData.additionalItems))
+      : [];
     setSelections(clonedSelections);
+
     setAdditionaItems(clonedAdditionalItems);
     setSelectedCustomer(projectData.customerLink);
     setUser(projectData.createdBy);

@@ -312,49 +312,56 @@ const MaterialSelectionComponent = ({
       </h2>
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
         {/* Left Column: Area Selection */}
+
         <div className="w-full sm:w-1/4">
           <p className="text-sm sm:text-base">Area</p>
-          {selections.map((selection, index) => {
-            const currentArea = selection.area || "";
-            return (
-              <div
-                key={index}
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4"
-              >
-                <div className="flex flex-col gap-2 w-full">
-                  <select
-                    className="border border-black opacity-50 p-2 sm:p-3 rounded-lg w-full text-sm sm:text-base focus:ring-2 focus:ring-blue-400"
-                    value={currentArea}
-                    onChange={(e) => {
-                      if (e.target.value === "__add_new__") {
-                        const newArea = prompt("Enter new Area name:");
-                        if (newArea && newArea.trim() !== "") {
-                          addArea(newArea.trim());
-                          handleAreaChange(index, newArea.trim());
-                        }
-                      } else {
-                        handleAreaChange(index, e.target.value);
-                      }
-                    }}
-                  >
-                    <option value="">Select Area</option>
-                    <option value="__add_new__">➕ Add New Space</option>
-                    {availableAreas.map((area) => (
-                      <option key={area} value={area}>
-                        {area[0]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  className="text-red-500 hover:text-red-700 mt-2 sm:mt-0"
-                  onClick={() => handleRemoveArea(index)}
+
+          {Array.isArray(selections) ? (
+            selections.map((selection, index) => {
+              const currentArea = selection.area || "";
+              return (
+                <div
+                  key={index}
+                  className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4"
                 >
-                  <FaTrash size={18} />
-                </button>
-              </div>
-            );
-          })}
+                  <div className="flex flex-col gap-2 w-full">
+                    <select
+                      className="border border-black opacity-50 p-2 sm:p-3 rounded-lg w-full text-sm sm:text-base focus:ring-2 focus:ring-blue-400"
+                      value={currentArea}
+                      onChange={(e) => {
+                        if (e.target.value === "__add_new__") {
+                          const newArea = prompt("Enter new Area name:");
+                          if (newArea && newArea.trim() !== "") {
+                            addArea(newArea.trim());
+                            handleAreaChange(index, newArea.trim());
+                          }
+                        } else {
+                          handleAreaChange(index, e.target.value);
+                        }
+                      }}
+                    >
+                      <option value="">Select Area</option>
+                      <option value="__add_new__">➕ Add New Space</option>
+                      {availableAreas.map((area) => (
+                        <option key={area} value={area}>
+                          {area[0]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    className="text-red-500 hover:text-red-700 mt-2 sm:mt-0"
+                    onClick={() => handleRemoveArea(index)}
+                  >
+                    <FaTrash size={18} />
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-red-500 text-sm mb-4">No areas available.</p>
+          )}
+
           <button
             className="flex flex-row gap-2 !rounded-md bg-sky-50 hover:bg-sky-100 items-center px-2 py-1 text-sm sm:text-base"
             onClick={handleAddArea}

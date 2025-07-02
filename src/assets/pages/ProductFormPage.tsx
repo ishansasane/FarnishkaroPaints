@@ -7,7 +7,7 @@ import { fetchWithLoading } from "../Redux/fetchWithLoading";
 
 const getItemsData = async () => {
   const response = await fetchWithLoading(
-    "https://sheeladecor.netlify.app/.netlify/functions/server/getsingleproducts"
+    "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssingleproducts"
   );
   const data = await response.json();
   return data.body;
