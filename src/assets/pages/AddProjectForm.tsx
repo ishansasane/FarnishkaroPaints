@@ -1237,29 +1237,33 @@ function AddProjectForm() {
   };
 
   const handleDiscountChange = (newDiscount, newDiscountType) => {
-    // --- Update discount state (if required) ---
     setDiscount(newDiscount);
     setDiscountType(newDiscountType);
 
-    // --- Deep clone selections and additionalItems ---
+    // Clone selections and additionalItems
     const updatedSelections = [...selections];
     const updatedAdditionalItems = [...additionalItems];
 
     // === Recalculate Area-Based Items ===
     updatedSelections.forEach((selection) => {
       selection.areacollection.forEach((areaCol) => {
-        const quantity = areaCol.measurement.quantity || 0;
-        if (!areaCol.totalTax) areaCol.totalTax = [];
-        if (!areaCol.totalAmount) areaCol.totalAmount = [];
+        const quantity = areaCol.measurement?.quantity || 0;
+        const items = areaCol.items || [];
+        const itemQuantities = areaCol.quantities || [];
 
-        // Calculate pre-tax total
+        // Initialize totalTax and totalAmount arrays
+        areaCol.totalTax = new Array(items.length).fill(0);
+        areaCol.totalAmount = new Array(items.length).fill(0);
+
+        // Compute total pre-tax amount for area
         let preTaxTotal = 0;
-        areaCol.items?.forEach((item, i) => {
-          const itemQty = parseFloat(areaCol.quantities?.[i]) || 0;
+        items.forEach((item, i) => {
+          const itemQty = parseFloat(itemQuantities[i]) || 0;
           const itemRate = parseFloat(item[4]) || 0;
           preTaxTotal += quantity * itemQty * itemRate;
         });
 
+        // Determine effective discount %
         const isPercent = newDiscountType === "percent";
         const effectiveDiscountPercent = isPercent
           ? newDiscount
@@ -1267,18 +1271,18 @@ function AddProjectForm() {
           ? (newDiscount / preTaxTotal) * 100
           : 0;
 
-        // Apply discount to each item
-        areaCol.items = areaCol.items?.map((item, i) => {
-          const itemQty = parseFloat(areaCol.quantities?.[i]) || 0;
+        // Apply discount and tax per item
+        areaCol.items = items.map((item, i) => {
+          const itemQty = parseFloat(itemQuantities[i]) || 0;
           const itemRate = parseFloat(item[4]) || 0;
-          const itemTaxPercent = parseFloat(item[5]) || 0;
+          const itemTaxRate = parseFloat(item[5]) || 0;
 
           const baseAmount = quantity * itemQty * itemRate;
           const discountAmount = (baseAmount * effectiveDiscountPercent) / 100;
           const discountedAmount = baseAmount - discountAmount;
 
           const taxAmount = parseFloat(
-            ((discountedAmount * itemTaxPercent) / 100).toFixed(2)
+            ((discountedAmount * itemTaxRate) / 100).toFixed(2)
           );
           const totalAmount = parseFloat(
             (discountedAmount + taxAmount).toFixed(2)
@@ -1293,22 +1297,23 @@ function AddProjectForm() {
     });
 
     // === Recalculate Additional Items ===
-    const totalBeforeDiscount = updatedAdditionalItems.reduce(
+    const preTaxAdditionalTotal = updatedAdditionalItems.reduce(
       (acc, item) => acc + item.quantity * item.rate,
       0
     );
 
-    const additionalDiscountPercent =
+    const effectiveAdditionalDiscountPercent =
       newDiscountType === "percent"
         ? newDiscount
-        : totalBeforeDiscount > 0
-        ? (newDiscount / totalBeforeDiscount) * 100
+        : preTaxAdditionalTotal > 0
+        ? (newDiscount / preTaxAdditionalTotal) * 100
         : 0;
 
     updatedAdditionalItems.forEach((item) => {
-      const baseNet = item.quantity * item.rate;
-      const discountAmount = (baseNet * additionalDiscountPercent) / 100;
-      const discountedNet = baseNet - discountAmount;
+      const baseAmount = item.quantity * item.rate;
+      const discountAmount =
+        (baseAmount * effectiveAdditionalDiscountPercent) / 100;
+      const discountedNet = baseAmount - discountAmount;
 
       item.netRate = parseFloat(discountedNet.toFixed(2));
       item.taxAmount = parseFloat(
@@ -1317,7 +1322,7 @@ function AddProjectForm() {
       item.totalAmount = parseFloat((item.netRate + item.taxAmount).toFixed(2));
     });
 
-    // === Set Everything ===
+    // === Final State Updates ===
     setSelections(updatedSelections);
     setAdditionalItems(updatedAdditionalItems);
 
@@ -1325,6 +1330,7 @@ function AddProjectForm() {
       updatedSelections,
       updatedAdditionalItems
     );
+
     setTax(totalTax);
     setAmount(totalAmount);
     setGrandTotal(parseFloat(totalAmount.toFixed(2)));
@@ -2484,7 +2490,9 @@ function AddProjectForm() {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Sub Total</span>
-                <span className="font-medium">INR {amount.toFixed(2)}</span>
+                <span className="font-medium">
+                  INR {(amount - tax).toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Total Tax Amount</span>

@@ -222,13 +222,13 @@ function AddSitePage() {
           <thead>
             <tr className="bg-gray-50">
               <th className="p-3 text-left text-sm font-medium text-gray-500">
-                Total Value
+                Total Amount
               </th>
               <th className="p-3 text-left text-sm font-medium text-gray-500">
-                Paid
+                Recived Amount
               </th>
               <th className="p-3 text-left text-sm font-medium text-gray-500">
-                Due
+                Due Amount
               </th>
             </tr>
           </thead>
@@ -271,17 +271,17 @@ function AddSitePage() {
         <div className="mt-4 flex justify-end">
           <div className="bg-gray-50 p-4 rounded-lg w-64">
             <div className="flex justify-between mb-2">
-              <span className="font-medium">Total:</span>
+              <span className="font-medium">Total Amount:</span>
               <span>
                 ₹{parseFloat(paymentData.totalValue || "0").toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between mb-2">
-              <span className="font-medium">Paid:</span>
+              <span className="font-medium">Recived :</span>
               <span>₹{parseFloat(paymentData.paid || "0").toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg">
-              <span>Balance Due:</span>
+              <span>Amount Due:</span>
               <span
                 className={
                   paymentData.due > 0 ? "text-red-500" : "text-green-500"
