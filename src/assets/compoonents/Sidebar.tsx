@@ -29,6 +29,10 @@ import {
   PaintBucket,
   Calendar,
   PersonStanding,
+  PersonStandingIcon,
+  SwitchCamera,
+  CheckCircle,
+  ReceiptPoundSterling,
 } from "lucide-react";
 import {
   createContext,
@@ -165,15 +169,11 @@ function SidebarContent({
     // },
     { text: "Brands", path: "/masters/brands", icon: <Star size={20} /> },
     {
-      text: "Paints",
+      text: "Colours",
       path: "/masters/colors",
       icon: <PaintBucket size={20} />,
     },
-    {
-      text: "Labours",
-      path: "/masters/labours",
-      icon: <PersonStanding size={20} />,
-    },
+
     { text: "Interiors", path: "/masters/interiors", icon: <Home size={20} /> },
     // { text: "Tailors", path: "/masters/tailors", icon: <Scissors size={20} /> },
     {
@@ -181,7 +181,16 @@ function SidebarContent({
       path: "/masters/sales-associate",
       icon: <UserCheck size={20} />,
     },
-    { text: "Stores", path: "/masters/stores", icon: <Store size={20} /> },
+    {
+      text: "Tasks",
+      path: "/tasks",
+      icon: <CheckCircle size={20} />,
+    },
+    {
+      text: "Reports",
+      path: "/reports",
+      icon: <ReceiptPoundSterling size={20} />,
+    },
   ];
 
   return (
@@ -251,23 +260,35 @@ function SidebarContent({
           </div>
         </li>
 
-        <SidebarItem
+        {/* <SidebarItem
           icon={<ListChecks size={20} />}
           text="Tasks"
           path="/tasks"
           setMobileMenuOpen={setMobileMenuOpen}
-        />
+        /> */}
         <SidebarItem
+          icon={<PersonStandingIcon size={20} />}
+          text="Labours"
+          path="/masters/labours"
+          setMobileMenuOpen={setMobileMenuOpen}
+        />
+        {/* <SidebarItem
           icon={<FileText size={20} />}
           text="Reports"
           path="/reports"
           setMobileMenuOpen={setMobileMenuOpen}
-        />
+        /> */}
 
         <SidebarItem
           icon={<Calendar size={20} />}
           text="Attendance"
           path="/attendance"
+          setMobileMenuOpen={setMobileMenuOpen}
+        />
+        <SidebarItem
+          icon={<SwitchCamera size={20} />}
+          text="Stores"
+          path="/masters/stores"
           setMobileMenuOpen={setMobileMenuOpen}
         />
         <SidebarItem
