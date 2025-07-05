@@ -1677,41 +1677,21 @@ function AddProjectForm() {
   }, [dispatch]);
 
   useEffect(() => {
-    async function getAreas() {
+    const getAreas = async () => {
       try {
-        const cachedData = localStorage.getItem("areasData");
-        const oneHour = 3600 * 1000;
-
-        if (cachedData) {
-          const { data, time } = JSON.parse(cachedData);
-
-          if (Date.now() - time < oneHour) {
-            setAvailableAreas(data);
-            return;
-          } else {
-            localStorage.removeItem("areasData");
-          }
-        }
-
         const response = await fetchWithLoading(
           "https://sheeladecor.netlify.app/.netlify/functions/server/getAreas"
         );
         const data = await response.json();
-        setAvailableAreas(data.body);
-
-        localStorage.setItem(
-          "areasData",
-          JSON.stringify({ data: data.body, time: Date.now() })
-        );
+        setAvailableAreas(data.body || []); // Even if empty, it's fine
       } catch (error) {
         console.error("Error fetching areas:", error);
+        setAvailableAreas([]); // Optional: set empty array in case of error
       }
-    }
+    };
 
-    if (availableAreas.length === 0) {
-      getAreas();
-    }
-  }, []);
+    getAreas();
+  }, []); // Only run once when component mounts
 
   const bankDetails = ["123213", "!23123213", "123132"];
   const termsConditions = ["sadsdsad", "Adasdad"];
@@ -2057,7 +2037,7 @@ function AddProjectForm() {
     );
     doc.setFont("helvetica", "normal");
     doc.text(
-      "Sheela Decor - All Rights Reserved",
+      "Sahani Paints - All Rights Reserved",
       pageWidth / 2,
       footerY + 17,
       { align: "center" }

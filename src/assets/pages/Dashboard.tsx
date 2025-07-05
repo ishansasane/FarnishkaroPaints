@@ -22,7 +22,7 @@ import BankDetails from "./BankDetails.tsx";
 import { fetchWithLoading } from "../Redux/fetchWithLoading.ts";
 
 const fetchTaskData = async () => {
-  const response = await fetchWithLoading(
+  const response = await fetch(
     "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintstasks"
   );
   const data = await response.json();
@@ -34,7 +34,7 @@ const fetchTaskData = async () => {
 };
 
 const fetchInquiryData = async () => {
-  const response = await fetchWithLoading(
+  const response = await fetch(
     "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsInquiry"
   );
   const data = await response.json();
@@ -59,7 +59,7 @@ const Dashboard: React.FC = () => {
     phonenumber: "",
   });
 
-  const sendPaintsInquiry = async () => {
+  const sendInquiry = async () => {
     const projectName = inquiryForm.project.trim();
     const comment = inquiryForm.comments;
     const inquiryDate = inquiryForm.inquiryDate;
@@ -86,7 +86,7 @@ const Dashboard: React.FC = () => {
     }
 
     // ✅ Proceed to send the inquiry
-    const response = await fetchWithLoading(
+    const response = await fetch(
       "https://sheeladecor.netlify.app/.netlify/functions/server/sendPaintsInquiry",
       {
         method: "POST",
@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
 
   const deleteTask = async (name: string) => {
     try {
-      const response = await fetchWithLoading(
+      const response = await fetch(
         "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintstask",
         {
           method: "POST",
@@ -191,18 +191,39 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchAndCacheInquiries = async () => {
+      const now = Date.now();
+      const cacheExpiry = 5 * 60 * 1000; // 5 minutes
+      const cached = localStorage.getItem("inquiryData");
+
       try {
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const timeDiff = now - parsed.time;
+
+          if (Array.isArray(parsed.data) && timeDiff < cacheExpiry) {
+            dispatch(setInquiryData(parsed.data));
+            return;
+          }
+        }
+
         const data = await fetchInquiryData();
-        dispatch(setInquiryData(data));
+        if (Array.isArray(data)) {
+          dispatch(setInquiryData(data));
+          localStorage.setItem(
+            "inquiryData",
+            JSON.stringify({ data, time: now })
+          );
+        } else {
+          console.error("Invalid inquiry data format:", data);
+        }
       } catch (err) {
-        console.error("Fetch failed:", err);
+        console.error("Failed to fetch inquiries:", err);
       }
     };
-    fetchData();
-  }, [dispatch]);
 
-  useEffect(() => {});
+    fetchAndCacheInquiries();
+  }, [dispatch, refresh]); // ✅ No need to use inquiries as dependency
 
   useEffect(() => {
     let isMounted = true;
@@ -228,7 +249,7 @@ const Dashboard: React.FC = () => {
           }
         }
 
-        const taskRes = await fetchWithLoading(
+        const taskRes = await fetch(
           "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintstasks",
           {
             credentials: "include",
@@ -265,7 +286,7 @@ const Dashboard: React.FC = () => {
 
   const fetchProjectData = async () => {
     try {
-      const response = await fetchWithLoading(
+      const response = await fetch(
         "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
         {
           credentials: "include",
@@ -370,7 +391,7 @@ const Dashboard: React.FC = () => {
 
   const fetchPaymentData = async () => {
     try {
-      const response = await fetchWithLoading(
+      const response = await fetch(
         "https://sheeladecor.netlify.app/.netlify/functions/server/getPaintsPayments"
       );
       if (!response.ok) {
@@ -465,7 +486,7 @@ const Dashboard: React.FC = () => {
 
   const handleMarkAsCompleted = async (status, name) => {
     try {
-      const response = await fetchWithLoading(
+      const response = await fetch(
         "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintstask",
         {
           method: "POST",
@@ -587,7 +608,7 @@ const Dashboard: React.FC = () => {
       followUpDate: "",
     });
   };
-  const handledeletePaintsInquiry = async (projectName) => {
+  const handleDeleteInquiry = async (projectName) => {
     const response = await fetchWithLoading(
       "https://sheeladecor.netlify.app/.netlify/functions/server/deletePaintsInquiry",
       {
@@ -763,10 +784,9 @@ const Dashboard: React.FC = () => {
             </Link>
             <button
               onClick={() => setTaskDialog(true)}
-              className="relative overflow-hidden group mb-2 px-4 py-2 text-sm font-medium text-white transition-all duration-300 ease-out !rounded-lg shadow-sm bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 hover:shadow-md"
+              className="relative overflow-hidden group  mb-2 px-4 py-2 text-sm font-medium text-white transition-all duration-300 ease-out !rounded-lg shadow-sm bg-blue-500 "
             >
               {/* Animated background elements */}
-              <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></span>
 
               {/* Button content with icon */}
               <div className="relative flex items-center justify-center space-x-2">
@@ -993,7 +1013,7 @@ const Dashboard: React.FC = () => {
                       className="bg-sky-600 text-white px-4 py-2 !rounded-lg hover:bg-sky-700 transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
-                        sendPaintsInquiry();
+                        sendInquiry();
                       }}
                     >
                       Submit
@@ -1062,7 +1082,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="flex justify-between mt-6">
                 <button
-                  onClick={() => handledeletePaintsInquiry(selectedInquiry[0])}
+                  onClick={() => handleDeleteInquiry(selectedInquiry[0])}
                   className="bg-white border !border-red-500 text-red-500 px-4 py-2 !rounded-lg hover:!bg-red-500 hover:!text-white transition-colors"
                 >
                   Delete

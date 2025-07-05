@@ -32,7 +32,7 @@ function Store() {
         </thead>
         <tbody>
           <tr className="border-t">
-            <td className="p-2">Sheela Decore</td>
+            <td className="p-2">Sheela Decor</td>
             <td className="p-2">
               <button
                 onClick={() =>
