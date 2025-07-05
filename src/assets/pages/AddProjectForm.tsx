@@ -639,7 +639,7 @@ function AddProjectForm() {
     quantity: number
   ): string => {
     const subtotal = rate * measurementQty * quantity;
-    return subtotal.toFixed(2);
+    return Math.round(subtotal).toString();
   };
 
   const handleWidthChange = (

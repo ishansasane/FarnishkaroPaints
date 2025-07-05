@@ -892,8 +892,8 @@ export default function Projects() {
                   }}
                   className="px-4 py-2"
                 >
-                  {(project.grandTotal - (projectPayments[index] || 0)).toFixed(
-                    2
+                  {Math.round(
+                    project.grandTotal - (projectPayments[index] || 0)
                   )}
                 </td>
                 <td

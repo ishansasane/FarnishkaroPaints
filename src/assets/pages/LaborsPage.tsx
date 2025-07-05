@@ -12,6 +12,23 @@ interface AttendanceEntry {
   }[];
 }
 
+const hasPermission = (requiredRoute: string): boolean => {
+  try {
+    const allowedRoutes = JSON.parse(
+      localStorage.getItem("allowed_routes") || "[]"
+    );
+    if (!Array.isArray(allowedRoutes)) return false;
+
+    return allowedRoutes.includes(
+      requiredRoute.replace(/\\/g, "").replace(/\/+$/, "")
+    );
+  } catch {
+    return false;
+  }
+};
+
+const canEditAttendance = hasPermission("/edit-attendence");
+
 function LaborsPage() {
   const [labors, setLabors] = useState<string[][]>([]);
   const [name, setName] = useState("");
@@ -250,15 +267,17 @@ function LaborsPage() {
                   <td className="border px-4 py-2">{pay ? `₹${pay}` : "--"}</td>
                   <td className="border px-4 py-2">{date}</td>
                   <td className="border px-4 py-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEditDialog([name, date, pay]);
-                      }}
-                      className="bg-blue-500 text-white px-3 py-1 rounded mr-2 hover:bg-blue-600"
-                    >
-                      Edit Payment
-                    </button>
+                    {canEditAttendance && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditDialog([name, date, pay]);
+                        }}
+                        className="bg-blue-500 text-white px-3 py-1 rounded mr-2 hover:bg-blue-600"
+                      >
+                        Edit Payment
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
@@ -430,7 +449,7 @@ function LaborsPage() {
             </div>
 
             <div className="mt-4 font-semibold">
-              Total Wage: ₹{calculateWage().toFixed(2)}
+              Total Wage: ₹{Math.round(calculateWage())}
             </div>
 
             <div className="mt-4 text-right">

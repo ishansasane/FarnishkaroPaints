@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchWithLoading } from "../Redux/fetchWithLoading";
+import Select from "react-select";
 
 function LaborsAttendance() {
   const [sites, setSites] = useState([]);
@@ -380,18 +381,19 @@ function LaborsAttendance() {
 
         {/* Add new labor */}
         <div className="flex gap-2 mb-6">
-          <select
-            value={newLaborName}
-            onChange={(e) => setNewLaborName(e.target.value)}
-            className="flex-1 p-2 border rounded"
-          >
-            <option value="">Select Labor</option>
-            {availableLabors.map((labor, index) => (
-              <option key={index} value={labor}>
-                {labor}
-              </option>
-            ))}
-          </select>
+          <Select
+            options={availableLabors.map((labor) => ({
+              label: labor,
+              value: labor,
+            }))}
+            value={
+              newLaborName ? { label: newLaborName, value: newLaborName } : null
+            }
+            onChange={(selected) => setNewLaborName(selected?.value || "")}
+            placeholder="Select Labor"
+            isClearable
+            className="flex-1"
+          />
           <input
             type="text"
             value={newLaborName}
