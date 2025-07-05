@@ -369,6 +369,9 @@ const BankSection = () => {
   const [editBankData, setEditBankData] = useState(false);
   const [formData, setFormData] = useState({
     customerName: "",
+    bankName: "",
+    branch: "",
+    pincode: "",
     accountNumber: "",
     ifscCode: "",
   });
@@ -398,6 +401,9 @@ const BankSection = () => {
   const sendBankDetails = async () => {
     if (
       !formData.customerName ||
+      !formData.bankName ||
+      !formData.branch ||
+      !formData.pincode ||
       !formData.accountNumber ||
       !formData.ifscCode
     ) {
@@ -479,6 +485,9 @@ const BankSection = () => {
   const resetForm = () => {
     setFormData({
       customerName: "",
+      bankName: "",
+      branch: "",
+      pincode: "",
       accountNumber: "",
       ifscCode: "",
     });
@@ -489,8 +498,11 @@ const BankSection = () => {
   const handleEdit = (data: any) => {
     setFormData({
       customerName: data[0],
-      accountNumber: data[1],
-      ifscCode: data[2],
+      bankName: data[1],
+      branch: data[2],
+      pincode: data[3],
+      accountNumber: data[4],
+      ifscCode: data[5],
     });
     setEditBankData(true);
     setBankDialog(true);
@@ -529,10 +541,10 @@ const BankSection = () => {
             </h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Name
+                Customer Name*
               </label>
               <input
                 type="text"
@@ -547,7 +559,52 @@ const BankSection = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Number
+                Bank Name*
+              </label>
+              <input
+                type="text"
+                name="bankName"
+                value={formData.bankName}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter bank name"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Branch*
+              </label>
+              <input
+                type="text"
+                name="branch"
+                value={formData.branch}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter branch"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pincode*
+              </label>
+              <input
+                type="text"
+                name="pincode"
+                value={formData.pincode}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter pincode"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Account Number*
               </label>
               <input
                 type="text"
@@ -562,7 +619,7 @@ const BankSection = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                IFSC Code
+                IFSC Code*
               </label>
               <input
                 type="text"
@@ -590,6 +647,9 @@ const BankSection = () => {
               disabled={
                 isLoading ||
                 !formData.customerName ||
+                !formData.bankName ||
+                !formData.branch ||
+                !formData.pincode ||
                 !formData.accountNumber ||
                 !formData.ifscCode
               }
@@ -639,7 +699,13 @@ const BankSection = () => {
                   #
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Account Name
+                  Customer Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Bank Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Branch
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Account Number
@@ -647,9 +713,7 @@ const BankSection = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   IFSC Code
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created Date
-                </th>
+
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -671,8 +735,12 @@ const BankSection = () => {
                     {data[2]}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {data[3]}
+                    {data[4]}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {data[5]}
+                  </td>
+
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-3">
                       <button

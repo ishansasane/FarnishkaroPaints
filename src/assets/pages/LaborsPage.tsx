@@ -27,6 +27,11 @@ function LaborsPage() {
     dayjs().format("YYYY")
   );
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [currentEditLabor, setCurrentEditLabor] = useState<{
+    name: string;
+    payment: string;
+  }>({ name: "", payment: "" });
 
   const fetchLabors = () => {
     setLoading(true);
@@ -114,6 +119,44 @@ function LaborsPage() {
       });
   };
 
+  const handleUpdate = () => {
+    if (!currentEditLabor.payment.trim()) return alert("Payment is required");
+
+    fetchWithLoading(
+      "https://sheeladecor.netlify.app/.netlify/functions/server/updatePaintsLabourData",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: currentEditLabor.name,
+          payment: currentEditLabor.payment.trim(),
+        }),
+      }
+    )
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success) {
+          alert("Labor payment updated successfully!");
+          fetchLabors();
+          setEditDialogOpen(false);
+        } else {
+          alert("Failed to update labor payment.");
+        }
+      })
+      .catch((err) => {
+        console.error("UPDATE error:", err);
+        alert("Something went wrong");
+      });
+  };
+
+  const openEditDialog = (labor: string[]) => {
+    setCurrentEditLabor({
+      name: labor[0],
+      payment: labor[2] || "",
+    });
+    setEditDialogOpen(true);
+  };
+
   const openAttendanceDialog = (laborName: string) => {
     setSelectedLabor(laborName);
     setDialogOpen(true);
@@ -122,6 +165,11 @@ function LaborsPage() {
   const closeDialog = () => {
     setDialogOpen(false);
     setSelectedLabor(null);
+  };
+
+  const closeEditDialog = () => {
+    setEditDialogOpen(false);
+    setCurrentEditLabor({ name: "", payment: "" });
   };
 
   const filteredAttendance = attendanceData.filter(
@@ -173,18 +221,19 @@ function LaborsPage() {
               <th className="border px-4 py-2 text-left">Name</th>
               <th className="border px-4 py-2 text-left">Payment</th>
               <th className="border px-4 py-2 text-left">Date</th>
+              <th className="border px-4 py-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="text-center py-4 text-gray-500">
+                <td colSpan={5} className="text-center py-4 text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : labors.length === 0 ? (
               <tr>
-                <td colSpan={4} className="text-center py-4 text-gray-500">
+                <td colSpan={5} className="text-center py-4 text-gray-500">
                   No labors added yet.
                 </td>
               </tr>
@@ -200,6 +249,17 @@ function LaborsPage() {
                   </td>
                   <td className="border px-4 py-2">{pay ? `₹${pay}` : "--"}</td>
                   <td className="border px-4 py-2">{date}</td>
+                  <td className="border px-4 py-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditDialog([name, date, pay]);
+                      }}
+                      className="bg-blue-500 text-white px-3 py-1 rounded mr-2 hover:bg-blue-600"
+                    >
+                      Edit Payment
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -246,6 +306,54 @@ function LaborsPage() {
                 onClick={handleAdd}
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Payment Dialog */}
+      {editDialogOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-xl font-semibold mb-4">Update Payment</h2>
+            <div className="mb-4">
+              <label className="block font-medium mb-1">Labor Name</label>
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2 bg-gray-100"
+                value={currentEditLabor.name}
+                readOnly
+                disabled
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block font-medium mb-1">Payment</label>
+              <input
+                type="number"
+                className="w-full border rounded px-3 py-2"
+                value={currentEditLabor.payment}
+                onChange={(e) =>
+                  setCurrentEditLabor({
+                    ...currentEditLabor,
+                    payment: e.target.value,
+                  })
+                }
+                placeholder="Enter payment amount"
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                onClick={closeEditDialog}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                onClick={handleUpdate}
+              >
+                Update Payment
               </button>
             </div>
           </div>

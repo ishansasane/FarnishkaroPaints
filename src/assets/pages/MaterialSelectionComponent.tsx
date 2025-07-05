@@ -392,7 +392,7 @@ const MaterialSelectionComponent = ({
                   Add New Group
                 </button>
               </div>
-              {selection.area ? (
+              {selection.area && Array.isArray(selection.areacollection) ? (
                 selection.areacollection.map((element, i) => (
                   <div
                     key={i}

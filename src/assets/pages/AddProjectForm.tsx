@@ -151,7 +151,7 @@ function AddProjectForm() {
 
   const getItemsData = async () => {
     const response = await fetchWithLoading(
-      "https://sheeladecor.netlify.app/.netlify/functions/server/getsingleproducts"
+      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssingleproducts"
     );
     const data = await response.json();
     return data.body;
@@ -217,7 +217,7 @@ function AddProjectForm() {
   async function fetchSalesAssociates() {
     try {
       const response = await fetchWithLoading(
-        "https://sheeladecor.netlify.app/.netlify/functions/server/getsalesassociatedata",
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintssalesassociatedata",
         {
           credentials: "include",
         }
@@ -377,7 +377,7 @@ function AddProjectForm() {
     }
 
     if (newMatchedItems.length == 0) {
-      newMatchedItems = [product.split(",")];
+      newMatchedItems = [product];
     }
 
     updatedSelections[mainindex].areacollection[i].items = newMatchedItems;
@@ -707,74 +707,82 @@ function AddProjectForm() {
     const updatedSelections = [...selections];
     const areaCol = updatedSelections[mainIndex].areacollection[index];
 
-    // Ensure quantities array is initialized
     if (!areaCol.quantities) areaCol.quantities = [];
 
-    // Sync both measurement and quotation section
     areaCol.measurement.quantity = quantity;
     areaCol.quantities[0] = quantity.toString();
 
-    const discountRaw =
-      discountType === "cash" ? `${discount}` : `${discount}%`;
+    // Step 1: Calculate pre-tax subtotal for this areaCol
+    let preTaxTotal = 0;
+    areaCol.items?.forEach((item, i) => {
+      const itemQty = parseFloat(areaCol.quantities?.[i]) || 0;
+      const itemRate = parseFloat(item[4]) || 0;
+      preTaxTotal += quantity * itemQty * itemRate;
+    });
 
-    const isPercent =
-      typeof discountRaw === "string" && discountRaw.toString().includes("%");
-    const discountValue =
-      parseFloat(discountRaw.toString().replace("%", "")) || 0;
-
-    if (areaCol.items !== undefined) {
-      if (!areaCol.totalTax) areaCol.totalTax = [];
-      if (!areaCol.totalAmount) areaCol.totalAmount = [];
-
-      // Step 1: Calculate total pre-tax amount for flat discount
-      let preTaxTotal = 0;
-      areaCol.items.forEach((item, i) => {
-        const itemQuantity = parseFloat(areaCol.quantities?.[i]) || 0;
-        const itemRate = parseFloat(item[4]) || 0;
-        preTaxTotal += quantity * itemQuantity * itemRate;
-      });
-
-      const effectiveDiscountPercent = isPercent
-        ? discountValue
-        : preTaxTotal > 0
-        ? (discountValue / preTaxTotal) * 100
-        : 0;
-
-      // Step 2: Calculate per item with discount + tax
-      const corrected = areaCol.items.map((item, i) => {
-        const itemQuantity = parseFloat(areaCol.quantities?.[i]) || 0;
-        const itemRate = parseFloat(item[4]) || 0;
-        const itemTaxPercent = parseFloat(item[5]) || 0;
-
-        const baseAmount = quantity * itemQuantity * itemRate;
-        const discountAmount = (baseAmount * effectiveDiscountPercent) / 100;
-        const discountedAmount = baseAmount - discountAmount;
-
-        const taxAmount = parseFloat(
-          ((discountedAmount * itemTaxPercent) / 100).toFixed(2)
-        );
-        const totalAmount = parseFloat(
-          (discountedAmount + taxAmount).toFixed(2)
-        );
-
-        areaCol.totalTax[i] = taxAmount;
-        areaCol.totalAmount[i] = totalAmount;
-
-        return [...item.slice(0, 6), taxAmount, totalAmount];
-      });
-
-      areaCol.items = corrected;
+    // Step 2: Compute effective discount percentage
+    let effectiveDiscountPercent = 0;
+    if (discountType === "percent") {
+      effectiveDiscountPercent = discount;
+    } else if (discountType === "cash" && preTaxTotal > 0) {
+      effectiveDiscountPercent = (discount / preTaxTotal) * 100;
     }
+
+    if (!areaCol.totalTax) areaCol.totalTax = [];
+    if (!areaCol.totalAmount) areaCol.totalAmount = [];
+
+    // Step 3: Apply discount and tax per item
+    areaCol.items = areaCol.items?.map((item, i) => {
+      const itemQty = parseFloat(areaCol.quantities?.[i]) || 0;
+      const itemRate = parseFloat(item[4]) || 0;
+      const itemTaxPercent = parseFloat(item[5]) || 0;
+
+      const baseAmount = quantity * itemQty * itemRate;
+      const discountAmount = (baseAmount * effectiveDiscountPercent) / 100;
+      const discountedAmount = baseAmount - discountAmount;
+
+      const taxAmount = parseFloat(
+        ((discountedAmount * itemTaxPercent) / 100).toFixed(2)
+      );
+      const totalAmount = parseFloat((discountedAmount + taxAmount).toFixed(2));
+
+      areaCol.totalTax[i] = taxAmount;
+      areaCol.totalAmount[i] = totalAmount;
+
+      return [...item.slice(0, 6), taxAmount, totalAmount];
+    });
 
     setSelections(updatedSelections);
 
+    // Step 4: Recalculate correct subtotal (no tax)
+    const selectionSubtotals = updatedSelections.flatMap((sel) =>
+      sel.areacollection.flatMap(
+        (col) =>
+          col.items?.reduce((acc, itm, idx) => {
+            const areaQty = col.measurement.quantity || 0;
+            const itemQty = parseFloat(col.quantities?.[idx]) || 0;
+            const itemRate = parseFloat(itm[4]) || 0;
+            return acc + areaQty * itemQty * itemRate;
+          }, 0) || 0
+      )
+    );
+
+    const additionalSubtotals = additionalItems.map(
+      (item) => item.quantity * item.rate
+    );
+    const subtotal = [...selectionSubtotals, ...additionalSubtotals].reduce(
+      (a, b) => a + b,
+      0
+    );
+    setAmount(parseFloat(subtotal.toFixed(2))); // ✅ This is pure subtotal without tax
+
+    // Step 5: Recalculate total tax and grand total
     const { totalTax, totalAmount } = recalculateTotals(
       updatedSelections,
       additionalItems
     );
     setTax(totalTax);
-    setAmount(totalAmount);
-    setGrandTotal(parseFloat(totalAmount.toFixed(2))); // ✅ Grand Total = Amount + Tax
+    setGrandTotal(parseFloat(totalAmount.toFixed(2))); // ✅ Grand Total includes tax
   };
 
   const handleUnitChange = (mainindex: number, index: number, unit: string) => {
@@ -799,36 +807,31 @@ function AddProjectForm() {
     const areaCol =
       updatedSelections[mainIndex].areacollection[collectionIndex];
 
-    const quantityNum = parseFloat(quantity) || 0;
-    const valueNum = parseFloat(value) || 0;
+    const measurementQty = parseFloat(value) || 0;
+    const itemQty = parseFloat(quantity) || 0;
 
-    // Ensure quantities array is initialized
     if (!areaCol.quantities) areaCol.quantities = [];
+    areaCol.quantities[itemIndex] = quantity;
+    areaCol.measurement.quantity = measurementQty;
 
-    // Sync both quotation and measurement
-    areaCol.quantities[itemIndex] = value;
-    areaCol.measurement.quantity = valueNum;
+    // Step 1: Base calculation (no discount, no tax)
+    const baseCost = num1 * measurementQty * itemQty;
 
-    // Step 2: Compute effective discount
-    // Step 2: Compute effective discount
+    // Step 2: Effective discount percentage
     let effectiveDiscountPercent = 0;
-    const baseCost = num1 * quantityNum * valueNum;
-
     if (discountType === "percent") {
       effectiveDiscountPercent = discount;
-    } else if (discountType === "cash") {
-      effectiveDiscountPercent = baseCost > 0 ? (discount / baseCost) * 100 : 0;
+    } else if (discountType === "cash" && baseCost > 0) {
+      // Cash discount is proportionally spread
+      effectiveDiscountPercent = (discount / baseCost) * 100;
     }
 
-    // Step 3: Apply discount
     const discountAmount = (baseCost * effectiveDiscountPercent) / 100;
     const discountedCost = baseCost - discountAmount;
 
-    // Step 4: Apply tax
     const taxAmount = parseFloat(((discountedCost * num2) / 100).toFixed(2));
     const totalWithTax = parseFloat((discountedCost + taxAmount).toFixed(2));
 
-    // Step 5: Set tax & total
     if (!areaCol.totalTax) areaCol.totalTax = [];
     if (!areaCol.totalAmount) areaCol.totalAmount = [];
 
@@ -837,24 +840,35 @@ function AddProjectForm() {
 
     setSelections(updatedSelections);
 
-    // Step 6: Recalculate overall tax/amount
+    // Step 3: Recalculate Subtotal (without tax)
+    const selectionSubtotals = updatedSelections.flatMap((selection) =>
+      selection.areacollection.flatMap(
+        (col) =>
+          col.items?.reduce((acc, item, idx) => {
+            const areaQty = col.measurement.quantity || 0;
+            const itemQuantity = parseFloat(col.quantities?.[idx]) || 0;
+            const itemRate = parseFloat(item[4]) || 0;
+            return acc + areaQty * itemQuantity * itemRate;
+          }, 0) || 0
+      )
+    );
+
+    const additionalSubtotals = additionalItems.map(
+      (itm) => itm.quantity * itm.rate
+    );
+    const pureSubtotal = [...selectionSubtotals, ...additionalSubtotals].reduce(
+      (a, b) => a + b,
+      0
+    );
+    setAmount(parseFloat(pureSubtotal.toFixed(2))); // ✅ Correct subtotal without tax
+
+    // Step 4: Recalculate Total Tax and Grand Total
     const { totalTax, totalAmount } = recalculateTotals(
       updatedSelections,
       additionalItems
     );
     setTax(totalTax);
-    setAmount(totalAmount);
-
-    // Optional: Update grand total
-    let discountAmt = 0;
-    if (discountType === "percent") {
-      discountAmt = (totalAmount * discount) / 100;
-    } else if (discountType === "cash") {
-      discountAmt = discount;
-    }
-
-    const grandTotal = parseFloat(totalAmount.toFixed(2)); // if you're tracking this
-    setGrandTotal(grandTotal);
+    setGrandTotal(parseFloat(totalAmount.toFixed(2)));
   };
 
   const handleAddMiscItem = () => {
@@ -884,25 +898,49 @@ function AddProjectForm() {
     const collection =
       updatedSelections[mainIndex].areacollection[collectionIndex];
 
-    const totalMRP = rate * parseFloat(measurementQty || "0");
-    const subtotal = totalMRP * qty;
+    const parsedMeasurementQty = parseFloat(measurementQty.toString()) || 0;
+    const subtotal = rate * parsedMeasurementQty * qty;
     const taxAmount = subtotal * (newTaxRate / 100);
     const total = subtotal + taxAmount;
 
-    // Update tax rate in item
-    collection.items[0][5] = newTaxRate;
-    collection.totalTax[0] = taxAmount;
-    collection.totalAmount[0] = total;
+    // ✅ Update the item’s tax and amounts
+    if (collection.items?.[0]) {
+      collection.items[0][5] = newTaxRate;
+    }
+    collection.totalTax[0] = parseFloat(taxAmount.toFixed(2));
+    collection.totalAmount[0] = parseFloat(total.toFixed(2));
 
     setSelections(updatedSelections);
 
+    // ✅ Recalculate subtotal (pure base amount without tax)
+    const selectionSubtotals = updatedSelections.flatMap((sel) =>
+      sel.areacollection.flatMap(
+        (col) =>
+          col.items?.reduce((acc, item, idx) => {
+            const areaQty = col.measurement.quantity || 0;
+            const itemQty = parseFloat(col.quantities?.[idx]) || 0;
+            const itemRate = parseFloat(item[4]) || 0;
+            return acc + areaQty * itemQty * itemRate;
+          }, 0) || 0
+      )
+    );
+
+    const additionalSubtotals = additionalItems.map(
+      (itm) => itm.quantity * itm.rate
+    );
+    const pureSubtotal = [...selectionSubtotals, ...additionalSubtotals].reduce(
+      (a, b) => a + b,
+      0
+    );
+    setAmount(parseFloat(pureSubtotal.toFixed(2))); // ✅ Subtotal without tax
+
+    // ✅ Recalculate totals (with tax)
     const { totalTax, totalAmount } = recalculateTotals(
       updatedSelections,
       additionalItems
     );
     setTax(totalTax);
-    setAmount(totalAmount);
-    setGrandTotal(parseFloat(totalAmount.toFixed(2)));
+    setGrandTotal(parseFloat(totalAmount.toFixed(2))); // ✅ Total including tax
   };
 
   // Delete item by index
@@ -911,23 +949,42 @@ function AddProjectForm() {
     updated.splice(itemIndex, 1);
     setAdditionalItems(updated);
 
-    // Recalculate totals
+    // Step 1: Recalculate Subtotal (pure base price, no tax)
+    const selectionSubtotals = selections.flatMap((selection) =>
+      selection.areacollection.flatMap(
+        (col) =>
+          col.items?.reduce((acc, item, idx) => {
+            const areaQty = col.measurement.quantity || 0;
+            const itemQty = parseFloat(col.quantities?.[idx]) || 0;
+            const itemRate = parseFloat(item[4]) || 0;
+            return acc + areaQty * itemQty * itemRate;
+          }, 0) || 0
+      )
+    );
+
+    const additionalSubtotals = updated.map((itm) => itm.quantity * itm.rate);
+
+    const pureSubtotal = [...selectionSubtotals, ...additionalSubtotals].reduce(
+      (acc, val) => acc + val,
+      0
+    );
+
+    setAmount(parseFloat(pureSubtotal.toFixed(2))); // ✅ Subtotal without tax
+
+    // Step 2: Recalculate Tax and Total (including tax)
     const { totalTax, totalAmount } = recalculateTotals(selections, updated);
     setTax(totalTax);
-    setAmount(totalAmount);
 
-    // Recalculate discount amount
+    // Step 3: Optional: Apply Discount Amount for Display (not used in calculation here)
     let discountAmt = 0;
-
     if (discountType === "percent") {
-      discountAmt = parseFloat(((totalAmount * discount) / 100).toFixed(2));
+      discountAmt = parseFloat(((pureSubtotal * discount) / 100).toFixed(2));
     } else if (discountType === "cash") {
       discountAmt = discount;
     }
 
-    // Recalculate grand total with updated discount
-    const grandTotal = parseFloat(totalAmount.toFixed(2));
-    setGrandTotal(grandTotal);
+    // Step 4: Set Grand Total (already includes discount inside recalculateTotals if you coded it there)
+    setGrandTotal(parseFloat(totalAmount.toFixed(2)));
   };
 
   const handleItemNameChange = (i: number, value: string) => {
@@ -943,23 +1000,26 @@ function AddProjectForm() {
     const parsedQuantity = parseFloat(quantity) || 0;
     item.quantity = parsedQuantity;
 
-    const baseNetRate = parsedQuantity * item.rate;
+    // Step 1: Calculate totalBeforeDiscount using all additional items
+    const totalBeforeDiscount = updated.reduce(
+      (acc, itm) => acc + itm.quantity * itm.rate,
+      0
+    );
 
-    // Step 1: Compute effective discount percentage
+    // Step 2: Determine effective discount percentage
     let effectiveDiscountPercent = 0;
     if (discountType === "percent") {
       effectiveDiscountPercent = discount;
-    } else if (discountType === "cash") {
-      const totalBeforeDiscount = baseNetRate;
-      effectiveDiscountPercent =
-        totalBeforeDiscount > 0 ? (discount / totalBeforeDiscount) * 100 : 0;
+    } else if (discountType === "cash" && totalBeforeDiscount > 0) {
+      effectiveDiscountPercent = (discount / totalBeforeDiscount) * 100;
     }
 
-    // Step 2: Apply discount to net rate
+    // Step 3: Apply discount to this specific item
+    const baseNetRate = parsedQuantity * item.rate;
     const discountAmount = (baseNetRate * effectiveDiscountPercent) / 100;
     const discountedNetRate = baseNetRate - discountAmount;
 
-    // Step 3: Tax calculation
+    // Step 4: Apply tax on discounted net rate
     const taxAmount = parseFloat(
       ((discountedNetRate * item.tax) / 100).toFixed(2)
     );
@@ -969,26 +1029,41 @@ function AddProjectForm() {
     item.taxAmount = taxAmount;
     item.totalAmount = totalAmount;
 
+    updated[i] = item;
+
     setAdditionalItems(updated);
 
+    // Step 5: Calculate subtotal (Amount) — this is base price without any tax
+    const selectionSubtotals = selections.flatMap((selection) =>
+      selection.areacollection.flatMap(
+        (col) =>
+          col.items?.reduce((acc, item, idx) => {
+            const areaQty = col.measurement.quantity || 0;
+            const itemQty = parseFloat(col.quantities?.[idx]) || 0;
+            const itemRate = parseFloat(item[4]) || 0;
+            return acc + areaQty * itemQty * itemRate;
+          }, 0) || 0
+      )
+    );
+
+    const additionalSubtotals = updated.map((itm) => itm.quantity * itm.rate);
+
+    const pureSubtotal = [...selectionSubtotals, ...additionalSubtotals].reduce(
+      (acc, val) => acc + val,
+      0
+    );
+
+    setAmount(parseFloat(pureSubtotal.toFixed(2))); // ✅ Subtotal without tax
+
+    // Step 6: Recalculate grand total and tax
     const { totalTax, totalAmount: grandSubtotal } = recalculateTotals(
       selections,
       updated
     );
     setTax(totalTax);
-    setAmount(grandSubtotal);
-
-    // Optional grand total and discount amount
-    let discountAmt = 0;
-    if (discountType === "percent") {
-      discountAmt = (grandSubtotal * discount) / 100;
-    } else if (discountType === "cash") {
-      discountAmt = discount;
-    }
-
-    const grandTotal = parseFloat(grandSubtotal.toFixed(2));
-    setGrandTotal(grandTotal);
+    setGrandTotal(parseFloat(grandSubtotal.toFixed(2))); // ✅ Grand total including tax
   };
+
   const [itemTax, setItemTax] = useState(0);
   const [itemTotal, setItemTotal] = useState(0);
 
@@ -1066,10 +1141,31 @@ function AddProjectForm() {
 
     setAdditionalItems(updated);
 
+    // ===== Recalculate Subtotal (Without Tax) =====
+    const selectionSubtotals = selections.flatMap((selection) =>
+      selection.areacollection.flatMap(
+        (col) =>
+          col.items?.reduce((acc, item, idx) => {
+            const areaQty = col.measurement.quantity || 0;
+            const itemQty = parseFloat(col.quantities?.[idx]) || 0;
+            const itemRate = parseFloat(item[4]) || 0;
+            return acc + areaQty * itemQty * itemRate;
+          }, 0) || 0
+      )
+    );
+
+    const additionalSubtotals = updated.map((itm) => itm.quantity * itm.rate);
+
+    const subTotalOnly = [...selectionSubtotals, ...additionalSubtotals].reduce(
+      (acc, val) => acc + val,
+      0
+    );
+
+    setAmount(parseFloat(subTotalOnly.toFixed(2))); // ✅ Subtotal without tax
+
     const { totalTax, totalAmount } = recalculateTotals(selections, updated);
     setTax(totalTax);
-    setAmount(totalAmount);
-    setGrandTotal(parseFloat(totalAmount.toFixed(2))); // ✅ Grand total logic added
+    setGrandTotal(parseFloat(totalAmount.toFixed(2))); // ✅ Grand total including tax
   };
 
   const handleItemTaxChange = (i: number, tax: string) => {
@@ -1105,10 +1201,31 @@ function AddProjectForm() {
 
     setAdditionalItems(updated);
 
+    // ===== Recalculate Subtotal (Without Tax) =====
+    const selectionSubtotals = selections.flatMap((selection) =>
+      selection.areacollection.flatMap(
+        (col) =>
+          col.items?.reduce((acc, item, idx) => {
+            const areaQty = col.measurement.quantity || 0;
+            const itemQty = parseFloat(col.quantities?.[idx]) || 0;
+            const itemRate = parseFloat(item[4]) || 0;
+            return acc + areaQty * itemQty * itemRate;
+          }, 0) || 0
+      )
+    );
+
+    const additionalSubtotals = updated.map((itm) => itm.quantity * itm.rate);
+
+    const subTotalOnly = [...selectionSubtotals, ...additionalSubtotals].reduce(
+      (acc, val) => acc + val,
+      0
+    );
+
+    setAmount(parseFloat(subTotalOnly.toFixed(2))); // ✅ Subtotal without tax
+
     const { totalTax, totalAmount } = recalculateTotals(selections, updated);
     setTax(totalTax);
-    setAmount(totalAmount);
-    setGrandTotal(parseFloat(totalAmount.toFixed(2))); // ✅ Grand total logic added
+    setGrandTotal(parseFloat(totalAmount.toFixed(2))); // ✅ Grand total including tax
   };
 
   const [status, changeStatus] = useState("approved");
@@ -1135,84 +1252,88 @@ function AddProjectForm() {
   >(null);
 
   const fetchProjectData = async () => {
-    const response = await fetchWithLoading(
-      "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
-      {
-        credentials: "include",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (!data.body || !Array.isArray(data.body)) {
-      throw new Error("Invalid data format: Expected an array in data.body");
-    }
-
-    const parseSafely = (value: any, fallback: any) => {
-      try {
-        return typeof value === "string"
-          ? JSON.parse(value)
-          : value || fallback;
-      } catch (error) {
-        console.warn("Invalid JSON:", value, error);
-        return fallback;
-      }
-    };
-
-    const deepClone = (obj: any) => JSON.parse(JSON.stringify(obj));
-
-    const fixBrokenArray = (input: any): string[] => {
-      if (Array.isArray(input)) return input;
-      if (typeof input !== "string") return [];
-
-      try {
-        const fixed = JSON.parse(input);
-        if (Array.isArray(fixed)) return fixed;
-        return [];
-      } catch {
-        try {
-          const cleaned = input
-            .replace(/^\[|\]$/g, "")
-            .split(",")
-            .map((item: string) => item.trim().replace(/^"+|"+$/g, ""));
-          return cleaned;
-        } catch {
-          return [];
+    try {
+      const response = await fetchWithLoading(
+        "https://sheeladecor.netlify.app/.netlify/functions/server/getpaintsprojectdata",
+        {
+          credentials: "include",
         }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-    };
 
-    const projects = data.body.map((row: any[]) => ({
-      projectName: row[0],
-      customerLink: parseSafely(row[1], []),
-      projectReference: row[2] || "",
-      status: row[3] || "",
-      totalAmount: parseFloat(row[4]) || 0,
-      totalTax: parseFloat(row[5]) || 0,
-      paid: parseFloat(row[6]) || 0,
-      discount: parseFloat(row[7]) || 0,
-      createdBy: row[8] || "",
-      allData: deepClone(parseSafely(row[9], [])),
-      projectDate: row[10] || "",
-      additionalRequests: parseSafely(row[11], []),
-      interiorArray: fixBrokenArray(row[12]),
-      salesAssociateArray: fixBrokenArray(row[13]),
-      additionalItems: deepClone(parseSafely(row[14], [])),
-      goodsArray: deepClone(parseSafely(row[15], [])),
-      tailorsArray: deepClone(parseSafely(row[16], [])),
-      projectAddress: row[17],
-      date: row[18],
-      grandTotal: row[19],
-      discountType: row[20],
-      bankDetails: deepClone(parseSafely(row[21], [])),
-      termsConditions: deepClone(parseSafely(row[22], [])),
-    }));
+      const data = await response.json();
 
-    return projects;
+      // Ensure data.body is an array; fallback to empty array if invalid
+      const projectsData = Array.isArray(data.body) ? data.body : [];
+
+      const parseSafely = (value: any, fallback: any) => {
+        try {
+          return typeof value === "string"
+            ? JSON.parse(value)
+            : value || fallback;
+        } catch (error) {
+          console.warn("Invalid JSON:", value, error);
+          return fallback;
+        }
+      };
+
+      const deepClone = (obj: any) => JSON.parse(JSON.stringify(obj));
+
+      const fixBrokenArray = (input: any): string[] => {
+        if (Array.isArray(input)) return input;
+        if (typeof input !== "string") return [];
+
+        try {
+          const fixed = JSON.parse(input);
+          if (Array.isArray(fixed)) return fixed;
+          return [];
+        } catch {
+          try {
+            const cleaned = input
+              .replace(/^\[|\]$/g, "")
+              .split(",")
+              .map((item: string) => item.trim().replace(/^"+|"+$/g, ""));
+            return cleaned;
+          } catch {
+            return [];
+          }
+        }
+      };
+
+      const projects = projectsData.map((row: any[]) => ({
+        projectName: row[0] || "",
+        customerLink: parseSafely(row[1], []),
+        projectReference: row[2] || "",
+        status: row[3] || "",
+        totalAmount: parseFloat(row[4]) || 0,
+        totalTax: parseFloat(row[5]) || 0,
+        paid: parseFloat(row[6]) || 0,
+        discount: parseFloat(row[7]) || 0,
+        createdBy: row[8] || "",
+        allData: deepClone(parseSafely(row[9], [])),
+        projectDate: row[10] || "",
+        additionalRequests: parseSafely(row[11], []),
+        interiorArray: fixBrokenArray(row[12]),
+        salesAssociateArray: fixBrokenArray(row[13]),
+        additionalItems: deepClone(parseSafely(row[14], [])),
+        goodsArray: deepClone(parseSafely(row[15], [])),
+        tailorsArray: deepClone(parseSafely(row[16], [])),
+        projectAddress: row[17] || null,
+        date: row[18] || "",
+        grandTotal: parseFloat(row[19]) || 0,
+        discountType: row[20] || "cash",
+        bankDetails: deepClone(parseSafely(row[21], [])),
+        termsConditions: deepClone(parseSafely(row[22], [])),
+      }));
+
+      return projects;
+    } catch (error) {
+      console.error("Fetch error in fetchProjectData:", error);
+      return []; // Return empty array on error to prevent breaking
+    }
   };
 
   const parseSafely = (input: any, fallback: any) => {
@@ -1236,53 +1357,73 @@ function AddProjectForm() {
     return cloned;
   };
 
-  const handleDiscountChange = (newDiscount, newDiscountType) => {
+  const handleDiscountChange = (
+    newDiscount: number,
+    newDiscountType: string
+  ) => {
     setDiscount(newDiscount);
     setDiscountType(newDiscountType);
 
-    // Clone selections and additionalItems
     const updatedSelections = [...selections];
     const updatedAdditionalItems = [...additionalItems];
 
-    // === Recalculate Area-Based Items ===
+    let totalBaseAmount = 0;
+
+    // === First: Calculate total base (pre-tax, pre-discount) ===
     updatedSelections.forEach((selection) => {
       selection.areacollection.forEach((areaCol) => {
-        const quantity = areaCol.measurement?.quantity || 0;
-        const items = areaCol.items || [];
-        const itemQuantities = areaCol.quantities || [];
+        const areaQuantity = areaCol.measurement.quantity || 0;
 
-        // Initialize totalTax and totalAmount arrays
-        areaCol.totalTax = new Array(items.length).fill(0);
-        areaCol.totalAmount = new Array(items.length).fill(0);
-
-        // Compute total pre-tax amount for area
-        let preTaxTotal = 0;
-        items.forEach((item, i) => {
-          const itemQty = parseFloat(itemQuantities[i]) || 0;
+        let areaBase = 0;
+        areaCol.items?.forEach((item, i) => {
+          const itemQty = parseFloat(areaCol.quantities?.[i]) || 0;
           const itemRate = parseFloat(item[4]) || 0;
-          preTaxTotal += quantity * itemQty * itemRate;
+          areaBase += areaQuantity * itemQty * itemRate;
         });
 
-        // Determine effective discount %
-        const isPercent = newDiscountType === "percent";
-        const effectiveDiscountPercent = isPercent
-          ? newDiscount
-          : preTaxTotal > 0
-          ? (newDiscount / preTaxTotal) * 100
-          : 0;
+        areaCol._baseAmount = areaBase; // Store temporarily
+        totalBaseAmount += areaBase;
+      });
+    });
 
-        // Apply discount and tax per item
-        areaCol.items = items.map((item, i) => {
-          const itemQty = parseFloat(itemQuantities[i]) || 0;
+    const additionalBase = updatedAdditionalItems.reduce(
+      (acc, item) => acc + item.quantity * item.rate,
+      0
+    );
+
+    totalBaseAmount += additionalBase;
+
+    // === Calculate discount ratio ===
+    const isPercent = newDiscountType === "percent";
+    const discountPercent = isPercent
+      ? newDiscount
+      : totalBaseAmount > 0
+      ? (newDiscount / totalBaseAmount) * 100
+      : 0;
+
+    const discountRatio = discountPercent / 100;
+
+    // === Apply to Selections ===
+    updatedSelections.forEach((selection) => {
+      selection.areacollection.forEach((areaCol) => {
+        const areaQuantity = areaCol.measurement.quantity || 0;
+        const areaBase = areaCol._baseAmount || 0;
+
+        if (!areaCol.totalTax) areaCol.totalTax = [];
+        if (!areaCol.totalAmount) areaCol.totalAmount = [];
+
+        areaCol.items = areaCol.items?.map((item, i) => {
+          const itemQty = parseFloat(areaCol.quantities?.[i]) || 0;
           const itemRate = parseFloat(item[4]) || 0;
-          const itemTaxRate = parseFloat(item[5]) || 0;
+          const itemTaxPercent = parseFloat(item[5]) || 0;
 
-          const baseAmount = quantity * itemQty * itemRate;
-          const discountAmount = (baseAmount * effectiveDiscountPercent) / 100;
-          const discountedAmount = baseAmount - discountAmount;
+          const baseAmount = areaQuantity * itemQty * itemRate;
+
+          const itemDiscount = baseAmount * discountRatio;
+          const discountedAmount = baseAmount - itemDiscount;
 
           const taxAmount = parseFloat(
-            ((discountedAmount * itemTaxRate) / 100).toFixed(2)
+            ((discountedAmount * itemTaxPercent) / 100).toFixed(2)
           );
           const totalAmount = parseFloat(
             (discountedAmount + taxAmount).toFixed(2)
@@ -1296,24 +1437,11 @@ function AddProjectForm() {
       });
     });
 
-    // === Recalculate Additional Items ===
-    const preTaxAdditionalTotal = updatedAdditionalItems.reduce(
-      (acc, item) => acc + item.quantity * item.rate,
-      0
-    );
-
-    const effectiveAdditionalDiscountPercent =
-      newDiscountType === "percent"
-        ? newDiscount
-        : preTaxAdditionalTotal > 0
-        ? (newDiscount / preTaxAdditionalTotal) * 100
-        : 0;
-
+    // === Apply to Additional Items ===
     updatedAdditionalItems.forEach((item) => {
-      const baseAmount = item.quantity * item.rate;
-      const discountAmount =
-        (baseAmount * effectiveAdditionalDiscountPercent) / 100;
-      const discountedNet = baseAmount - discountAmount;
+      const baseNet = item.quantity * item.rate;
+      const itemDiscount = baseNet * discountRatio;
+      const discountedNet = baseNet - itemDiscount;
 
       item.netRate = parseFloat(discountedNet.toFixed(2));
       item.taxAmount = parseFloat(
@@ -1322,17 +1450,40 @@ function AddProjectForm() {
       item.totalAmount = parseFloat((item.netRate + item.taxAmount).toFixed(2));
     });
 
-    // === Final State Updates ===
-    setSelections(updatedSelections);
-    setAdditionalItems(updatedAdditionalItems);
-
-    const { totalTax, totalAmount } = recalculateTotals(
-      updatedSelections,
-      updatedAdditionalItems
+    // === Final Totals Calculation ===
+    const selectionTaxArray = updatedSelections.flatMap((selection) =>
+      selection.areacollection.flatMap((col) => col.totalTax || [])
     );
 
+    const selectionAmountArray = updatedSelections.flatMap((selection) =>
+      selection.areacollection.flatMap((col) => col.totalAmount || [])
+    );
+
+    const additionalTaxArray = updatedAdditionalItems.map(
+      (item) => parseFloat(item.taxAmount?.toString()) || 0
+    );
+
+    const additionalAmountArray = updatedAdditionalItems.map(
+      (item) => parseFloat(item.totalAmount?.toString()) || 0
+    );
+
+    const totalTax = parseFloat(
+      [...selectionTaxArray, ...additionalTaxArray]
+        .reduce((acc, val) => acc + val, 0)
+        .toFixed(2)
+    );
+
+    const totalAmount = parseFloat(
+      [...selectionAmountArray, ...additionalAmountArray]
+        .reduce((acc, val) => acc + val, 0)
+        .toFixed(2)
+    );
+
+    setSelections(updatedSelections);
+    setAdditionalItems(updatedAdditionalItems);
     setTax(totalTax);
-    setAmount(totalAmount);
+    setAmount(totalBaseAmount);
+    setGrandTotal(totalAmount);
     setGrandTotal(parseFloat(totalAmount.toFixed(2)));
   };
 
@@ -1566,19 +1717,20 @@ function AddProjectForm() {
   const termsConditions = ["sadsdsad", "Adasdad"];
 
   const generatePDF = () => {
+    const formatAmount = (value: number): string =>
+      value % 1 === 0 ? value.toString() : value.toFixed(2);
+
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     let yOffset = 20;
 
-    // Colors and fonts
     doc.setFont("helvetica", "normal");
     const primaryColor = [0, 51, 102];
     const secondaryColor = [33, 33, 33];
     const accentColor = [0, 102, 204];
     const lightGray = [245, 245, 245];
 
-    // Header
     doc.setFillColor(...primaryColor);
     doc.rect(0, 0, pageWidth, 30, "F");
     doc.setFillColor(...accentColor);
@@ -1586,31 +1738,44 @@ function AddProjectForm() {
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.text("Quotation", pageWidth / 2, 18, { align: "center" });
+    doc.text("Invoice", pageWidth / 2, 18, { align: "center" });
 
-    // Company Details
     yOffset += 15;
+
     doc.setFontSize(10);
     doc.setTextColor(...secondaryColor);
+
+    // Make SHEELA DECOR bold
+    doc.setFont("helvetica", "bold");
+    doc.text("SAHANI PAINTS", 15, yOffset);
+
+    // Reset to normal font for the rest
     doc.setFont("helvetica", "normal");
-    doc.text("Sheela Decor", 15, yOffset);
-    yOffset += 5;
-    doc.text("123 Business Street, City, Country", 15, yOffset);
+
     yOffset += 5;
     doc.text(
-      "Email: contact@sheeladecor.com | Phone: +123 456 7890",
+      "2, Shivneri Heights, Nagar-Kalyan Road, Ahmednagar - 414001",
       15,
       yOffset
     );
+
+    yOffset += 5;
+    doc.text("GSTIN/UIN: 27AUOPS3749J1ZT", 15, yOffset);
+
+    yOffset += 5;
+    doc.text(
+      "Email: sahanipaints@gmail.com | Phone: 9822097512 / 7020870276",
+      15,
+      yOffset
+    );
+
     yOffset += 8;
 
-    // Divider
     doc.setDrawColor(...accentColor);
     doc.setLineWidth(0.4);
     doc.line(15, yOffset, pageWidth - 15, yOffset);
     yOffset += 8;
 
-    // Project and Customer Details Box
     doc.setFillColor(...lightGray);
     doc.roundedRect(15, yOffset, pageWidth - 30, 25, 2, 2, "F");
     doc.setFontSize(10);
@@ -1638,7 +1803,6 @@ function AddProjectForm() {
     );
     yOffset += 10;
 
-    // Table Data
     const tableData: any[] = [];
     let srNo = 1;
 
@@ -1686,14 +1850,14 @@ function AddProjectForm() {
 
             tableData.push([
               srNo++,
-              `${item[0]} * ${measurementQty}`,
+              `${item[0]} * ${formatAmount(measurementQty)}`,
               size,
-              `INR ${mrp.toFixed(2)}`,
-              qty.toString(),
-              `INR ${subtotal.toFixed(2)}`,
-              `${taxRate.toFixed(2)}%`,
-              `INR ${taxAmount.toFixed(2)}`,
-              `INR ${total.toFixed(2)}`,
+              formatAmount(mrp),
+              formatAmount(qty),
+              formatAmount(subtotal),
+              `${formatAmount(taxRate)}%`,
+              formatAmount(taxAmount),
+              formatAmount(total),
             ]);
           });
         });
@@ -1726,19 +1890,19 @@ function AddProjectForm() {
           srNo++,
           item.name || `Misc Item ${idx + 1}`,
           item.description || item.remark || "N/A",
-          `INR ${rate.toFixed(2)}`,
-          qty.toString(),
-          `INR ${netRate.toFixed(2)}`,
-          `${tax.toFixed(0)}%`,
-          `INR ${taxAmount.toFixed(2)}`,
-          `INR ${totalAmount.toFixed(2)}`,
+          formatAmount(rate),
+          formatAmount(qty),
+          formatAmount(netRate),
+          `${formatAmount(tax)}%`,
+          formatAmount(taxAmount),
+          formatAmount(totalAmount),
         ]);
       });
     }
 
-    // Improved wider table layout
     autoTable(doc, {
       startY: yOffset,
+      margin: { left: 16.5 },
       head: [
         [
           "Sr. No.",
@@ -1767,7 +1931,7 @@ function AddProjectForm() {
       theme: "grid",
       styles: {
         font: "helvetica",
-        fontSize: 7.5,
+        fontSize: 6.5,
         cellPadding: 1.5,
         textColor: secondaryColor,
         lineColor: [200, 200, 200],
@@ -1778,7 +1942,7 @@ function AddProjectForm() {
         fillColor: primaryColor,
         textColor: [255, 255, 255],
         fontStyle: "bold",
-        fontSize: 8,
+        fontSize: 6.5,
         halign: "center",
         cellPadding: 1.5,
       },
@@ -1814,13 +1978,10 @@ function AddProjectForm() {
     const footerHeight = 25;
     const bottomMargin = footerHeight + 10;
 
-    // Smart placement for Summary Box
-    if (tableEndY + summaryBoxHeight + bottomMargin > pageHeight) {
-      doc.addPage();
-      yOffset = 15;
-    } else {
-      yOffset = tableEndY + 10;
-    }
+    yOffset =
+      tableEndY + summaryBoxHeight + bottomMargin > pageHeight
+        ? (doc.addPage(), 15)
+        : tableEndY + 10;
 
     doc.setFillColor(...lightGray);
     doc.roundedRect(pageWidth - 90, yOffset - 5, 75, 50, 2, 2, "F");
@@ -1838,16 +1999,17 @@ function AddProjectForm() {
     const numericTax = Number(tax) || 0;
     const numericDiscount = Number(discount) || 0;
     const summaryItems = [
-      { label: "Total Amount", value: `INR ${numericAmount.toFixed(2)}` },
-      { label: "Discount", value: `INR ${numericDiscount.toFixed(2)}` },
-      { label: "Total Tax", value: `INR ${numericTax.toFixed(2)}` },
+      { label: "Total Amount", value: `  ${formatAmount(numericAmount)}` },
+      { label: "Discount", value: `  ${formatAmount(numericDiscount)}` },
+      { label: "Total Tax", value: `  ${formatAmount(numericTax)}` },
       {
         label: "Grand Total",
-        value: `INR ${(numericAmount + numericTax - numericDiscount).toFixed(
-          2
+        value: `  ${formatAmount(
+          numericAmount + numericTax - numericDiscount
         )}`,
       },
     ];
+
     summaryItems.forEach((item) => {
       doc.setFont("helvetica", "bold");
       doc.text(item.label, pageWidth - 85, yOffset);
@@ -1856,7 +2018,6 @@ function AddProjectForm() {
       yOffset += 8;
     });
 
-    // Terms & Conditions
     if (termsAndConditions.trim()) {
       if (yOffset + 30 > pageHeight - footerHeight - 10) {
         doc.addPage();
@@ -1882,7 +2043,6 @@ function AddProjectForm() {
       });
     }
 
-    // Footer only on last page
     const footerY = pageHeight - footerHeight;
     doc.setFillColor(...accentColor);
     doc.rect(0, footerY, pageWidth, 1, "F");
@@ -1890,7 +2050,7 @@ function AddProjectForm() {
     doc.setTextColor(100, 100, 100);
     doc.setFont("helvetica", "italic");
     doc.text(
-      "Thank you for choosing Sheela Decor!",
+      "Thank you for choosing Sahani Paints!",
       pageWidth / 2,
       footerY + 10,
       { align: "center" }
@@ -1913,27 +2073,21 @@ function AddProjectForm() {
   const handleMRPChange = (
     mainIndex: number,
     collectionIndex: number,
-    value: string,
+    value: number,
     measurementQuantity: number,
     taxRate: number,
     qty: number
   ) => {
     const updatedSelections = [...selections];
     const measurementQty = parseFloat(measurementQuantity.toString() || "0");
-    const newMRP = parseFloat(value) || 0;
+    const newMRP = parseFloat(value.toString() || "0");
 
-    // Update item[4] to make item[4] * measurementQuantity equal the input MRP
-    updatedSelections[mainIndex].areacollection[collectionIndex].items[0][4] =
-      measurementQty > 0 ? newMRP / measurementQty : newMRP;
+    const areaCollection =
+      updatedSelections[mainIndex].areacollection[collectionIndex];
+    areaCollection.items[0][4] = newMRP;
 
-    // Recalculate Subtotal, Tax Amount, and Total
+    // Calculate original subtotal (before discount and tax)
     const subtotal = newMRP * qty;
-    const taxAmount = subtotal * (parseFloat(taxRate.toString() || "0") / 100);
-    updatedSelections[mainIndex].areacollection[collectionIndex].totalTax[0] =
-      taxAmount;
-    updatedSelections[mainIndex].areacollection[
-      collectionIndex
-    ].totalAmount[0] = subtotal + taxAmount;
 
     // Apply discount
     let effectiveDiscountPercent = 0;
@@ -1945,45 +2099,71 @@ function AddProjectForm() {
 
     const discountAmount = (subtotal * effectiveDiscountPercent) / 100;
     const discountedSubtotal = subtotal - discountAmount;
-    const discountedTaxAmount =
-      (discountedSubtotal * parseFloat(taxRate.toString() || "0")) / 100;
-    const discountedTotal = discountedSubtotal + discountedTaxAmount;
 
-    updatedSelections[mainIndex].areacollection[collectionIndex].totalTax[0] =
-      parseFloat(discountedTaxAmount.toFixed(2));
-    updatedSelections[mainIndex].areacollection[
-      collectionIndex
-    ].totalAmount[0] = parseFloat(discountedTotal.toFixed(2));
+    const taxAmount =
+      (discountedSubtotal * parseFloat(taxRate.toString() || "0")) / 100;
+    const totalWithTax = discountedSubtotal + taxAmount;
+
+    areaCollection.totalTax[0] = parseFloat(taxAmount.toFixed(2));
+    areaCollection.totalAmount[0] = parseFloat(totalWithTax.toFixed(2));
 
     setSelections(updatedSelections);
 
-    // Recalculate totals for summary
+    // ===== Recalculate Totals =====
+    const selectionAmountArray = updatedSelections.flatMap((selection) =>
+      selection.areacollection.flatMap((col) => {
+        return (
+          col.items?.reduce((acc, item, idx) => {
+            const itemQty = parseFloat(col.quantities?.[idx]) || 0;
+            const itemRate = parseFloat(item[4]) || 0;
+            const areaQty = col.measurement.quantity || 0;
+            return acc + areaQty * itemQty * itemRate;
+          }, 0) || 0
+        );
+      })
+    );
+
+    const additionalAmountArray = additionalItems.map(
+      (item) => item.quantity * item.rate
+    );
+
+    const subTotalOnly = [
+      ...selectionAmountArray,
+      ...additionalAmountArray,
+    ].reduce((acc, val) => acc + val, 0);
+
+    setAmount(parseFloat(subTotalOnly.toFixed(2))); // ✅ This is your subtotal (no tax)
+
     const { totalTax, totalAmount } = recalculateTotals(
       updatedSelections,
       additionalItems
     );
     setTax(totalTax);
-    setAmount(totalAmount);
-    setGrandTotal(parseFloat(totalAmount.toFixed(2)));
+    setGrandTotal(totalAmount); // ✅ This is total including tax
   };
 
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap"
+  />;
+
   return (
-    <div className="flex flex-col gap-6 p-6 bg-gray-50 min-h-screen w-full">
+    <div className="flex mt-5 md:!mt-1 flex-col gap-8 p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen w-full font-inter">
       {/* Header Section */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+      <div className="flex flex-col gap-3">
+        <h1 className="text-4xl md:text-5xl font-poppins font-bold text-gray-900 tracking-tight">
           Add New Project
         </h1>
-        <div className="flex gap-4 text-sm md:text-base">
+        <div className="flex gap-6 text-base md:text-lg">
           <Link
             to="/"
-            className="text-blue-600 hover:text-blue-800 transition-colors !no-underline"
+            className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-300 !no-underline"
           >
             Dashboard
           </Link>
           <Link
             to="/projects"
-            className="text-blue-600 hover:text-blue-800 transition-colors !no-underline"
+            className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-300 !no-underline"
           >
             All Projects
           </Link>
@@ -1991,9 +2171,9 @@ function AddProjectForm() {
       </div>
 
       {/* Main Content */}
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Customer Details */}
-        <div className="bg-white p-6 rounded-xl shadow-none border border-gray-200">
+        <div className="bg-white p-8 !rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl">
           <CustomerDetails
             customers={customers}
             selectedCustomer={selectedCustomer}
@@ -2004,7 +2184,7 @@ function AddProjectForm() {
         </div>
 
         {/* Project Details */}
-        <div className="bg-white p-6 rounded-xl shadow-none border border-gray-200">
+        <div className="bg-white p-8 !rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl">
           <ProjectDetails
             selectedCustomer={selectedCustomer}
             interior={interior}
@@ -2031,7 +2211,7 @@ function AddProjectForm() {
         </div>
 
         {/* Material Selection */}
-        <div className="bg-white p-6 rounded-xl shadow-none border border-gray-200">
+        <div className="bg-white p-8 !rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl">
           <MaterialSelectionComponent
             selections={selections}
             availableAreas={availableAreas}
@@ -2054,8 +2234,9 @@ function AddProjectForm() {
             projectData={projectData}
           />
         </div>
+
         {/* Measurement Section */}
-        <div className="bg-white p-6 rounded-xl shadow-none border border-gray-200">
+        <div className="bg-white p-8 !rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl">
           <MeasurementSection
             selections={selections}
             units={units}
@@ -2069,103 +2250,110 @@ function AddProjectForm() {
             handleGroupDelete={handleGroupDelete}
           />
         </div>
+
         {/* Miscellaneous Section */}
-        <div className="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-800">
+        <div className="mt-8 p-8 bg-white !rounded-2xl border border-gray-100 shadow-lg transition-all duration-300 hover:shadow-xl">
+          <div className="flex flex-wrap justify-between items-center mb-6">
+            <h2 className="text-2xl md:text-3xl font-poppins font-semibold text-gray-900 tracking-tight">
               Miscellaneous
             </h2>
             <button
-              className="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium !rounded-xl hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm md:text-base font-poppins font-medium !rounded-lg hover:bg-indigo-700 transition-colors duration-300"
               onClick={handleAddMiscItem}
             >
-              <FaPlus className="w-3 h-3 sm:w-4 sm:h-4" />
+              <FaPlus className="w-4 h-4" />
               Add Item
             </button>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <div className="overflow-x-auto !rounded-lg border border-gray-100">
             <table className="w-full bg-white hidden sm:table">
               <thead>
-                <tr className="bg-gray-100 text-gray-700 text-sm font-semibold">
-                  <th className="py-3 px-4 text-center">SR</th>
-                  <th className="py-3 px-4">Item Name</th>
-                  <th className="py-3 px-4">Quantity</th>
-                  <th className="py-3 px-4">Rate</th>
-                  <th className="py-3 px-4">Net Rate</th>
-                  <th className="py-3 px-4">Tax (%)</th>
-                  <th className="py-3 px-4">Tax Amount</th>
-                  <th className="py-3 px-4">Total Amount</th>
-                  <th className="py-3 px-4">Remark</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
+                <tr className="bg-indigo-50 text-gray-800 text-sm font-poppins font-semibold">
+                  <th className="py-4 px-6 text-center">SR</th>
+                  <th className="py-4 px-6">Item Name</th>
+                  <th className="py-4 px-6">Quantity</th>
+                  <th className="py-4 px-6">Rate</th>
+                  <th className="py-4 px-6">Net Rate</th>
+                  <th className="py-4 px-6">Tax (%)</th>
+                  <th className="py-4 px-6">Tax Amount</th>
+                  <th className="py-4 px-6">Total Amount</th>
+                  <th className="py-4 px-6">Remark</th>
+                  <th className="py-4 px-6 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {additionalItems.map((item, i) => (
-                  <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4 text-center text-sm">{i + 1}</td>
-                    <td className="py-3 px-4">
+                  <tr
+                    key={i}
+                    className="border-b border-gray-100 hover:bg-indigo-50/50 transition-colors duration-200"
+                  >
+                    <td className="py-4 px-6 text-center text-sm">{i + 1}</td>
+                    <td className="py-4 px-6">
                       <input
                         onChange={(e) =>
                           handleItemNameChange(i, e.target.value)
                         }
-                        className="w-[120px] border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-[140px] border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.name || ""}
                         type="text"
                       />
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-4 px-6">
                       <input
                         onChange={(e) =>
                           handleItemQuantityChange(i, e.target.value)
                         }
-                        className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.quantity || ""}
                         type="number"
                         min="0"
                       />
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-4 px-6">
                       <input
                         onChange={(e) =>
                           handleItemRateChange(i, e.target.value)
                         }
-                        className="w-[70px] border border-gray-300 rounded px-2 py-1 text-sm"
+                        className="w-[80px] border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.rate || ""}
                         type="number"
                         min="0"
                       />
                     </td>
-                    <td className="py-3 px-4 text-sm text-center">
-                      INR {item.netRate.toFixed(2)}
+                    <td className="py-4 px-6 text-sm text-center font-inter">
+                      {item.netRate.toFixed(2)}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-4 px-6">
                       <input
                         onChange={(e) => handleItemTaxChange(i, e.target.value)}
-                        className="w-[70px] border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-[80px] border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.tax || ""}
                         type="number"
                         min="0"
                       />
                     </td>
-                    <td className="py-3 px-4 text-sm text-center">
-                      INR {item.taxAmount.toFixed(2)}
+                    <td className="py-4 px-6 text-sm text-center font-inter">
+                      {item.taxAmount.toFixed(2)}
                     </td>
-                    <td className="py-3 px-4 text-sm text-center">
-                      INR {item.totalAmount.toFixed(2)}
+                    <td className="py-4 px-6 text-sm text-center font-inter">
+                      {item.totalAmount.toFixed(2)}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-4 px-6">
                       <input
                         onChange={(e) =>
                           handleItemRemarkChange(i, e.target.value)
                         }
-                        className="w-[120px] border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-[140px] border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.remark || ""}
                         type="text"
                       />
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      <button onClick={() => handleDeleteMiscItem(i)}>
-                        <FaTrash className="text-red-500 hover:text-red-600 w-4 h-4" />
+                    <td className="py-4 px-6 text-center">
+                      <button
+                        onClick={() => handleDeleteMiscItem(i)}
+                        className="text-red-500 hover:text-red-600 transition-colors duration-200"
+                      >
+                        <FaTrash className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
@@ -2173,105 +2361,110 @@ function AddProjectForm() {
               </tbody>
             </table>
             {/* Mobile View for Miscellaneous */}
-            <div className="sm:hidden flex flex-col gap-4 mt-4">
+            <div className="sm:hidden flex flex-col gap-6 mt-6">
               {additionalItems.map((item, i) => (
                 <div
                   key={i}
-                  className="bg-white p-4 rounded-lg shadow-none border border-gray-200"
+                  className="bg-white p-6 !rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl"
                 >
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-sm">SR: {i + 1}</span>
-                    <button onClick={() => handleDeleteMiscItem(i)}>
-                      <FaTrash className="text-red-500 hover:text-red-600 w-4 h-4" />
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="font-poppins font-semibold text-sm">
+                      SR: {i + 1}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteMiscItem(i)}
+                      className="text-red-500 hover:text-red-600 transition-colors duration-200"
+                    >
+                      <FaTrash className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 font-poppins">
                         Item Name
                       </label>
                       <input
                         onChange={(e) =>
                           handleItemNameChange(i, e.target.value)
                         }
-                        className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.name || ""}
                         type="text"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 font-poppins">
                         Quantity
                       </label>
                       <input
                         onChange={(e) =>
                           handleItemQuantityChange(i, e.target.value)
                         }
-                        className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.quantity || ""}
                         type="number"
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 font-poppins">
                         Rate
                       </label>
                       <input
                         onChange={(e) =>
                           handleItemRateChange(i, e.target.value)
                         }
-                        className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.rate || ""}
                         type="number"
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 font-poppins">
                         Net Rate
                       </label>
-                      <span className="text-sm">
-                        INR {item.netRate.toFixed(2)}
+                      <span className="text-sm font-inter">
+                        {item.netRate.toFixed(2)}
                       </span>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 font-poppins">
                         Tax (%)
                       </label>
                       <input
                         onChange={(e) => handleItemTaxChange(i, e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.tax || ""}
                         type="number"
                         min="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 font-poppins">
                         Tax Amount
                       </label>
-                      <span className="text-sm">
-                        INR {item.taxAmount.toFixed(2)}
+                      <span className="text-sm font-inter">
+                        {item.taxAmount.toFixed(2)}
                       </span>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 font-poppins">
                         Total Amount
                       </label>
-                      <span className="text-sm">
-                        INR {item.totalAmount.toFixed(2)}
+                      <span className="text-sm font-inter">
+                        {item.totalAmount.toFixed(2)}
                       </span>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium text-gray-700 font-poppins">
                         Remark
                       </label>
                       <input
                         onChange={(e) =>
                           handleItemRemarkChange(i, e.target.value)
                         }
-                        className="w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                         value={item.remark || ""}
                         type="text"
                       />
@@ -2284,25 +2477,25 @@ function AddProjectForm() {
         </div>
 
         {/* Quotation Section */}
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 pl-4 md:pl-4">
+        <div className="bg-white p-8 !rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 hover:shadow-xl">
+          <h2 className="text-2xl md:text-3xl font-poppins font-semibold text-gray-900 mb-6 tracking-tight pl-0">
             Quotation
           </h2>
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <div className="overflow-x-auto !rounded-lg border border-gray-100">
             <table className="w-full bg-white min-w-[800px]">
               <thead>
-                <tr className="bg-gray-100 text-gray-700 text-xs sm:text-sm md:text-base font-semibold">
-                  <th className="py-2 px-4 text-center">SR</th>
-                  <th className="py-2 px-4">Area</th>
-                  <th className="py-2 px-4">Product Name</th>
-                  <th className="py-2 px-4">Size</th>
-                  <th className="py-2 px-4">MRP</th>
-                  <th className="py-2 px-4">Quantity</th>
-                  <th className="py-2 px-4">Subtotal</th>
-                  <th className="py-2 px-4">Tax Rate(%)</th>
-                  <th className="py-2 px-4">Tax Amount</th>
-                  <th className="py-2 px-4">Tax Amount</th>
-                  <th className="py-2 px-4">Total</th>
+                <tr className="bg-indigo-50 text-gray-800 text-sm font-poppins font-semibold">
+                  <th className="py-4 px-6 text-center">SR</th>
+                  <th className="py-4 px-6">Area</th>
+                  <th className="py-4 px-6">Product Name</th>
+                  <th className="py-4 px-6">Size</th>
+                  <th className="py-4 px-6">MRP</th>
+                  <th className="py-4 px-6">Quantity</th>
+                  <th className="py-4 px-6">Subtotal</th>
+                  <th className="py-4 px-6">Tax Rate(%)</th>
+                  <th className="py-4 px-6">Tax Amount</th>
+
+                  <th className="py-4 px-6">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -2313,13 +2506,10 @@ function AddProjectForm() {
                       const qty = collection.quantities?.[0] || 0;
                       if (!item) return null;
 
-                      const calculatedMRP = (
-                        item[4] *
-                        parseFloat(collection.measurement.quantity || "0")
-                      ).toFixed(2);
+                      const calculatedMRP = item[4];
                       const subtotal = (
                         item[4] *
-                        parseFloat(collection.measurement.quantity || "0") *
+                        parseFloat(collection.measurement.quantity || 0) *
                         qty
                       ).toFixed(2);
                       const taxAmount =
@@ -2330,18 +2520,18 @@ function AddProjectForm() {
                       return (
                         <tr
                           key={`${mainIndex}-${collectionIndex}`}
-                          className="border-b border-gray-200 hover:bg-gray-50"
+                          className="border-b border-gray-100 hover:bg-indigo-50/50 transition-colors duration-200"
                         >
-                          <td className="py-2 px-4 text-center text-sm">
+                          <td className="py-4 px-6 text-center text-sm font-inter">
                             {collectionIndex + 1}
                           </td>
-                          <td className="py-2 px-4 text-sm">
+                          <td className="py-4 px-6 text-sm font-inter">
                             {selection.area}
                           </td>
-                          <td className="py-2 px-4 text-sm">
+                          <td className="py-4 px-6 text-sm font-inter">
                             {collection.productGroup?.[0] || "N/A"}
                           </td>
-                          <td className="py-2 px-4 text-sm">
+                          <td className="py-4 px-6 text-sm font-inter">
                             {collection.measurement.width &&
                             collection.measurement.height
                               ? `${collection.measurement.width} x ${
@@ -2349,27 +2539,42 @@ function AddProjectForm() {
                                 } ${collection.measurement.unit || ""}`
                               : "N/A"}
                           </td>
-                          <td className="py-2 px-4 text-sm">
+                          <td className="py-4 px-6 text-sm">
                             <input
                               type="number"
-                              className="w-[120px] border border-gray-300 rounded px-2 py-1 text-sm"
-                              value={calculatedMRP}
-                              onChange={(e) =>
+                              className="w-[140px] border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
+                              value={calculatedMRP === 0 ? "" : calculatedMRP}
+                              onChange={(e) => {
+                                let inputValue = e.target.value;
+
+                                // Remove leading zeros if more than one digit and not a decimal
+                                if (
+                                  inputValue.length > 1 &&
+                                  inputValue[0] === "0" &&
+                                  inputValue[1] !== "."
+                                ) {
+                                  inputValue = inputValue.replace(/^0+/, "");
+                                }
+
+                                const parsedValue = parseFloat(
+                                  inputValue || "0"
+                                );
+
                                 handleMRPChange(
                                   mainIndex,
                                   collectionIndex,
-                                  e.target.value,
+                                  parsedValue,
                                   collection.measurement.quantity,
                                   item[5],
                                   qty
-                                )
-                              }
+                                );
+                              }}
                             />
                           </td>
-                          <td className="py-2 px-4 text-sm">
+                          <td className="py-4 px-2 text-sm">
                             <input
                               type="number"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                              className="w-full border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                               value={qty}
                               onChange={(e) =>
                                 handleQuantityChange(
@@ -2385,8 +2590,8 @@ function AddProjectForm() {
                               }
                             />
                           </td>
-                          <td className="py-2 px-4 text-sm">
-                            INR{" "}
+                          <td className="py-4 px-6 text-sm font-inter">
+                            {" "}
                             {(
                               parseFloat(item[4]) *
                               parseFloat(
@@ -2395,11 +2600,10 @@ function AddProjectForm() {
                               parseFloat(qty || "0")
                             ).toFixed(2)}
                           </td>
-
-                          <td className="py-2 px-4 text-sm">
+                          <td className="py-4 px-2 text-sm">
                             <input
                               type="number"
-                              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                              className="w-full border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                               value={item[5]}
                               onChange={(e) =>
                                 handleTaxChange(
@@ -2413,13 +2617,14 @@ function AddProjectForm() {
                               }
                             />
                           </td>
-
-                          <td className="py-2 px-4 text-sm">
-                            {item[5] || "0"}%
+                          {/* <td className="py-4 px-6 text-sm font-inter">
+                          {item[5] || "0"}%
+                        </td> */}
+                          <td className="py-4 px-6 text-sm font-inter">
+                            {taxAmount}
                           </td>
-                          <td className="py-2 px-4 text-sm">INR {taxAmount}</td>
-                          <td className="py-2 px-4 text-sm">
-                            INR {totalAmount}
+                          <td className="py-4 px-6 text-sm font-inter">
+                            {totalAmount}
                           </td>
                         </tr>
                       );
@@ -2432,91 +2637,123 @@ function AddProjectForm() {
         </div>
 
         {/* Summary and Bank Details */}
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex flex-col md:flex-row gap-8">
           {/* Bank Details and Terms */}
-          <div className="bg-white p-6 rounded-xl shadow-none border border-gray-200 w-full md:w-1/2">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <div className="bg-white p-8 !rounded-2xl shadow-lg border border-gray-100 w-full md:w-1/2 transition-all duration-300 hover:shadow-xl">
+            <h3 className="text-xl font-poppins font-semibold text-gray-900 mb-6 tracking-tight">
               Bank Details & Terms
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <select
                 value={bank}
                 onChange={(e) => setBank(e.target.value.split(","))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full border border-gray-200 !rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
               >
                 <option value="">Select Bank Details</option>
-                {bankData.map((data, index) => (
-                  <option key={index} value={data}>
-                    Account Name : {data[0]} - Account Number : {data[1]}
-                  </option>
-                ))}
+                {Array.isArray(bankData) && bankData.length > 0 ? (
+                  bankData.map((data, index) => (
+                    <option
+                      key={index}
+                      value={data}
+                      className="overflow-y-scroll"
+                    >
+                      Account Name: {data?.[0] || "NA"} - Bank:{" "}
+                      {data?.[1] || "NA"} - Account Number: {data?.[4] || "N/A"}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No bank accounts available</option>
+                )}
               </select>
               <textarea
                 placeholder="Bank Details Description"
-                value={`Account Name : ${
-                  bank == "NA" ? "" : bank[0]
-                } \nAccount Number : ${
-                  bank == "NA" ? "" : bank[1]
-                }\nIFSC code : ${bank == "NA" ? "" : bank[2]}`}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
+                value={`Bank: ${
+                  bank[1] == "NA" ? "" : bank[1]
+                }\nAccount Name: ${
+                  bank[0] == "NA" ? "" : bank[0]
+                }\nAccount Number: ${
+                  bank[4] == "NA" ? "" : bank[4]
+                }\nIFSC code: ${bank[5] == "NA" ? "" : bank[5]}\n Branch: ${
+                  bank[2] == "NA" ? "" : bank[2]
+                } \n Pincode: ${bank[3] == "NA" ? "" : bank[3]}`}
+                className="w-full border border-gray-200 !rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
+                rows={5}
               ></textarea>
               <select
                 value={terms}
                 onChange={(e) => setTerms(e.target.value.split(","))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full border border-gray-200 !rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
               >
                 <option value="">Select Terms & Conditions</option>
-                {termData.map((data, index) => (
-                  <option key={index} value={data}>
-                    {data[0]}
-                  </option>
-                ))}
+                {Array.isArray(termData) && termData.length > 0 ? (
+                  termData.map((data, index) => (
+                    <option key={index} value={data}>
+                      {data?.[0] || "N/A"}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No terms available</option>
+                )}
               </select>
               <textarea
                 placeholder="Terms & Conditions Description"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
-                value={`Terms & Conditions : ${terms == "NA" ? "" : terms[0]}`}
+                className="w-full border border-gray-200 !rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
+                rows={4}
+                value={`Terms & Conditions: ${terms == "NA" ? "" : terms[0]}`}
               ></textarea>
             </div>
           </div>
 
           {/* Summary */}
-          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 w-full md:w-1/2">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          <div className="bg-white p-8 !rounded-2xl shadow-lg border border-gray-100 w-full md:w-1/2 transition-all duration-300 hover:shadow-xl">
+            <h3 className="text-xl font-poppins font-semibold text-gray-900 mb-6 tracking-tight">
               Summary
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Sub Total</span>
-                <span className="font-medium">
-                  INR {(amount - tax).toFixed(2)}
+                <span className="text-gray-700 font-poppins font-medium">
+                  Sub Total
+                </span>
+                <span className="font-medium font-inter">
+                  {" "}
+                  {amount.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Total Tax Amount</span>
-                <span className="font-medium">INR {tax.toFixed(2)}</span>
+                <span className="text-gray-700 font-poppins font-medium">
+                  Total Tax Amount
+                </span>
+                <span className="font-medium font-inter">
+                  {" "}
+                  {tax.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Total Amount</span>
-                <span className="font-medium">INR {amount.toFixed(2)}</span>
+                <span className="text-gray-700 font-poppins font-medium">
+                  Total Amount
+                </span>
+                <span className="font-medium font-inter">
+                  {" "}
+                  {grandTotal.toFixed(2)}
+                </span>
               </div>
               <hr className="border-gray-200" />
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Discount</span>
-                <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-700 font-poppins font-medium">
+                  Discount
+                </span>
+                <div className="flex items-center gap-3">
                   <select
                     onChange={(e) => {
                       handleDiscountChange(discount, e.target.value);
                     }}
-                    className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="border border-gray-200 !rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                   >
                     <option value="cash">₹</option>
                     <option value="percent">%</option>
                   </select>
                   <input
-                    className="w-24 border border-gray-300 rounded-md px-3 py-1 text-sm text-right focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 md:w-28 border border-gray-200 !rounded-lg px-4 py-2 text-sm text-right focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
                     value={discount}
                     onChange={(e) => {
                       handleDiscountChange(e.target.value, discountType);
@@ -2528,21 +2765,23 @@ function AddProjectForm() {
               </div>
               <hr className="border-gray-200" />
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600 font-semibold">Grand Total</span>
-                <span className="font-semibold text-blue-600">
-                  INR {grandTotal.toFixed(2)}
+                <span className="text-gray-700 font-poppins font-semibold">
+                  Grand Total
+                </span>
+                <span className="font-poppins font-bold text-indigo-600 text-lg">
+                  {grandTotal.toFixed(2)}
                 </span>
               </div>
-              <div className=" flex gap-2 flex-col">
+              <div className="flex gap-3 flex-col">
                 <button
                   onClick={sendProjectData}
-                  className="w-full  bg-blue-600 text-white py-2 !rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium mt-4"
+                  className="w-full bg-indigo-600 text-white py-3 !rounded-lg hover:bg-indigo-700 transition-colors duration-300 text-sm font-poppins font-semibold"
                 >
                   Add Project & Generate Quote
                 </button>
                 <button
                   onClick={generatePDF}
-                  className="w-full bg-green-600 text-white py-2 !rounded-xl hover:bg-green-700 transition-colors text-sm font-medium"
+                  className="w-full bg-emerald-600 text-white py-3 !rounded-lg hover:bg-emerald-700 transition-colors duration-300 text-sm font-poppins font-semibold"
                 >
                   Download Quotation PDF
                 </button>
