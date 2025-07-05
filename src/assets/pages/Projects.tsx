@@ -15,6 +15,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ConfirmBox from "./ConfirmBox";
 import BankDetails from "./BankDetails";
+import { fetchWithLoading } from "../Redux/fetchWithLoading";
 
 // Define the type for a project
 interface Project {
@@ -317,7 +318,7 @@ export default function Projects() {
 
   const deleteProject = async (name) => {
     try {
-      const response = await fetch(
+      const response = await fetchWithLoading(
         "https://sheeladecor.netlify.app/.netlify/functions/server/deletepaintsprojectdata",
         {
           method: "POST",
