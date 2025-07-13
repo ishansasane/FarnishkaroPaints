@@ -15,6 +15,12 @@ function LaborsAttendance() {
   const [availableLabors, setAvailableLabors] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
 
+  // New state for filtering and searching
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterSite, setFilterSite] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
+
   const hasPermission = (requiredRoute: string): boolean => {
     try {
       const allowedRoutes = JSON.parse(
@@ -280,14 +286,29 @@ function LaborsAttendance() {
     }
   };
 
-  // Group attendance data by date
-  const groupedByDate = attendanceData.reduce((acc, entry) => {
-    if (!acc[entry.date]) {
-      acc[entry.date] = [];
-    }
-    acc[entry.date].push(entry);
-    return acc;
-  }, {});
+  // Filter attendance records based on search and filter criteria
+  const filteredAttendanceData = attendanceData
+    .filter((entry) => {
+      // Filter by site
+      if (filterSite && entry.site !== filterSite) return false;
+
+      // Filter by exact date
+      if (filterDate && entry.date !== filterDate) return false;
+
+      // Filter by month (format: "YYYY-MM")
+      if (filterMonth && !entry.date.startsWith(filterMonth)) return false;
+
+      // Search by labor name
+      if (searchTerm) {
+        const laborMatch = entry.labors.some((labor) =>
+          labor.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        if (!laborMatch) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -477,61 +498,121 @@ function LaborsAttendance() {
       <div>
         <h2 className="text-xs font-semibold mb-4">Attendance Records</h2>
 
-        {attendanceData.length === 0 ? (
-          <p className="text-gray-500 text-xs">No attendance records found</p>
+        {/* Search and Filter Controls */}
+        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Search Labor Name
+              </label>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by labor name..."
+                className="w-full p-2 border rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Filter by Site
+              </label>
+              <select
+                value={filterSite}
+                onChange={(e) => setFilterSite(e.target.value)}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">All Sites</option>
+                {sites.map((site, index) => (
+                  <option key={index} value={site}>
+                    {site}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Filter by Date
+              </label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Filter by Month
+              </label>
+              <input
+                type="month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-gray-500">
+            Note: Clear filters to see all records
+          </div>
+        </div>
+
+        {filteredAttendanceData.length === 0 ? (
+          <p className="text-gray-500 text-xs">
+            No matching attendance records found
+          </p>
         ) : (
-          attendanceData
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .map((entry, index) => (
-              <div key={index} className="mb-6 bg-white p-4 rounded shadow">
-                <div className="flex justify-between items-center mb-3">
-                  <h5>Date: {formatDate(entry.date)}</h5>
-                  <div className="flex gap-2">
-                    <h5 className="text-sm font-medium">Site: {entry.site}</h5>
-                    {canEditAttendance && (
-                      <button
-                        onClick={() => {
-                          setSelectedDate(entry.date);
-                          setSelectedSite(entry.site);
-                          window.scrollTo(0, 0);
-                        }}
-                        className="text-blue-500 hover:text-blue-700 text-sm"
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="border p-2 text-left">Name</th>
-                        <th className="border p-2 text-left">Day</th>
-                        <th className="border p-2 text-left">Night</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {entry.labors.map((labor, laborIndex) => (
-                        <tr key={laborIndex}>
-                          <td className="border p-2">{labor.name}</td>
-                          <td className="border p-2">
-                            {labor.dayStatus === "P"
-                              ? "Present (P)"
-                              : "Absent (A)"}
-                          </td>
-                          <td className="border p-2">
-                            {labor.nightStatus === "P"
-                              ? "Present (P)"
-                              : "Absent (A)"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          filteredAttendanceData.map((entry, index) => (
+            <div key={index} className="mb-6 bg-white p-4 rounded shadow">
+              <div className="flex justify-between items-center mb-3">
+                <h5>Date: {formatDate(entry.date)}</h5>
+                <div className="flex gap-2">
+                  <h5 className="text-sm font-medium">Site: {entry.site}</h5>
+                  {canEditAttendance && (
+                    <button
+                      onClick={() => {
+                        setSelectedDate(entry.date);
+                        setSelectedSite(entry.site);
+                        window.scrollTo(0, 0);
+                      }}
+                      className="text-blue-500 hover:text-blue-700 text-sm"
+                    >
+                      Edit
+                    </button>
+                  )}
                 </div>
               </div>
-            ))
+              <div className="overflow-x-auto">
+                <table className="min-w-full border">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border p-2 text-left">Name</th>
+                      <th className="border p-2 text-left">Day</th>
+                      <th className="border p-2 text-left">Night</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entry.labors.map((labor, laborIndex) => (
+                      <tr key={laborIndex}>
+                        <td className="border p-2">{labor.name}</td>
+                        <td className="border p-2">
+                          {labor.dayStatus === "P"
+                            ? "Present (P)"
+                            : "Absent (A)"}
+                        </td>
+                        <td className="border p-2">
+                          {labor.nightStatus === "P"
+                            ? "Present (P)"
+                            : "Absent (A)"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>

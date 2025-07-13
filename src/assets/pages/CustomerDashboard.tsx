@@ -149,7 +149,7 @@ const generatePDF = (project: any) => {
   doc.text("123 Business Street, City, Country", 15, yOffset);
   yOffset += 5;
   doc.text(
-    "Email: contact@sheeladecor.com | Phone: +123 456 7890",
+    "Email: sahanipaints@gmail.com | Phone: 9822097512 | 7020870276",
     15,
     yOffset
   );
@@ -399,14 +399,14 @@ const generatePDF = (project: any) => {
   doc.setTextColor(100, 100, 100);
   doc.setFont("helvetica", "italic");
   doc.text(
-    "Thank you for choosing Sahani Paints!",
+    "Thank you for choosing Sheela Decor!",
     pageWidth / 2,
     pageHeight - 15,
     { align: "center" }
   );
   doc.setFont("helvetica", "normal");
   doc.text(
-    "Sahani Paints - All Rights Reserved",
+    "Sheela Decor - All Rights Reserved",
     pageWidth / 2,
     pageHeight - 8,
     { align: "center" }
@@ -496,13 +496,15 @@ const CustomerDashboard = ({
           console.error("Failed to fetch projects:", error);
         }
       }
-
       // Filter & Calculate Project Stats
       let filteredProjects = [];
       if (customerDashboardData[0]) {
         filteredProjects = projectList.filter(
-          (p) => p.customerLink[0] === customerDashboardData[0]
+          (p) =>
+            p?.customerLink?.[0]?.toString().trim() ===
+            customerDashboardData[0]?.toString().trim()
         );
+
         setProjectData(filteredProjects);
         setActiveOrders(filteredProjects.length);
 
@@ -588,7 +590,7 @@ const CustomerDashboard = ({
     date = now.toISOString().slice(0, 16);
 
     const api =
-      "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintscustomerdata";
+      "https://sheeladecor.netlify.app/.netlify/functions/server/updatepaintsprojectdata";
 
     const response = await fetchWithLoading(api, {
       method: "POST",
@@ -718,7 +720,7 @@ const CustomerDashboard = ({
                     <td className="py-3 px-4 text-sm">{project.projectName}</td>
                     <td className="py-3 px-4 text-sm">{project.status}</td>
                     <td className="py-3 px-4 text-sm">
-                      ₹{Math.round(project.totalAmount).toLocaleString("en-IN")}
+                      ₹{Math.round(project.grandTotal).toLocaleString("en-IN")}
                     </td>
                     <td className="py-3 px-4 text-sm">
                       ₹
@@ -730,7 +732,7 @@ const CustomerDashboard = ({
                     <td className="py-3 px-4 text-sm">
                       ₹
                       {Math.round(
-                        project.totalAmount - perProjectPayment[index]
+                        project.grandTotal - perProjectPayment[index]
                       ).toLocaleString("en-IN")}
                     </td>
                     <td className="py-3 px-4 text-sm">{project.projectDate}</td>

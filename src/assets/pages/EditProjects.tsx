@@ -530,18 +530,16 @@ const EditProjects = ({
   const handleProductGroupChange = (
     mainindex: number,
     i: number,
-    product: string
+    product: any
   ) => {
     const updatedSelections = [...selections];
 
-    console.log(product);
-    console.log(mainindex);
-    console.log(i);
-
+    // Ensure areacollection exists
     if (!updatedSelections[mainindex].areacollection) {
       updatedSelections[mainindex].areacollection = [];
     }
 
+    // Ensure the group object exists at index i
     if (!updatedSelections[mainindex].areacollection[i]) {
       updatedSelections[mainindex].areacollection[i] = {
         productGroup: null,
@@ -562,36 +560,51 @@ const EditProjects = ({
       };
     }
 
-    const newproduct = product;
-    updatedSelections[mainindex].areacollection[i].productGroup = newproduct;
+    updatedSelections[mainindex].areacollection[i].productGroup = product;
 
-    const pg = newproduct;
-    if (!Array.isArray(pg) || pg.length < 2) return;
+    let newMatchedItems: any[] = [];
 
-    console.log(pg);
-
-    let relevantPG = pg.length > 2 ? pg.slice(1, -1) : null;
-
-    let newMatchedItems = null;
-
-    console.log(relevantPG);
-
-    if (relevantPG != null) {
-      newMatchedItems = relevantPG
-        .map((pgItem) => items.find((item) => item[0] === pgItem))
-        .filter((item) => Array.isArray(item));
-    } else {
+    // === Case 1: Single Product Item
+    if (
+      Array.isArray(product) &&
+      product.length > 6 &&
+      typeof product[6] === "string" &&
+      product[6].includes("T")
+    ) {
       newMatchedItems = [product];
     }
+
+    // === Case 2 & 3: Product Group (type 1 or 2)
+    else if (Array.isArray(product) && product.length >= 3) {
+      let mainProduct = product[1];
+      let addonProducts: string[] = [];
+
+      // try to parse product[2] as JSON (type 2)
+      try {
+        addonProducts = JSON.parse(product[2]);
+      } catch {
+        // not JSON? assume it's a string => treat as type 1, make array
+        addonProducts = [product[2]];
+      }
+
+      const allProductNames = [mainProduct, ...addonProducts];
+
+      newMatchedItems = allProductNames
+        .map((name) => items.find((item) => item[0] === name))
+        .filter(Boolean);
+    }
+
+    // === Fallback: push as is
+    if (newMatchedItems.length === 0) {
+      newMatchedItems = [product];
+    }
+
     console.log(newMatchedItems);
-
-    if (newMatchedItems.length == 0) {
-      newMatchedItems = [product];
-    }
 
     updatedSelections[mainindex].areacollection[i].items = newMatchedItems;
     setSelections(updatedSelections);
 
+    // === Update goodsArray
     const filteredGoods = goodsArray.filter(
       (g) => !(g.mainindex === mainindex && g.groupIndex === i)
     );
@@ -599,7 +612,7 @@ const EditProjects = ({
     const newGoods = newMatchedItems.map((item) => ({
       mainindex,
       groupIndex: i,
-      pg: newproduct,
+      pg: product,
       date: "",
       status: "Pending",
       orderID: "",
@@ -609,16 +622,17 @@ const EditProjects = ({
 
     setGoodsArray([...filteredGoods, ...newGoods]);
 
+    // === Update tailorsArray
     const filteredTailors = tailorsArray.filter(
       (t) => !(t.mainindex === mainindex && t.groupIndex === i)
     );
 
     const newTailors = newMatchedItems
       .filter((item) => item[7] == true)
-      .map((item, itemIndex) => ({
+      .map((item) => ({
         mainindex,
         groupIndex: i,
-        pg: newproduct,
+        pg: product,
         rate: 0,
         tailorData: [""],
         status: "Pending",

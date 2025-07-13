@@ -344,14 +344,16 @@ function AddProjectForm() {
   const handleProductGroupChange = (
     mainindex: number,
     i: number,
-    product: string
+    product: any
   ) => {
     const updatedSelections = [...selections];
 
+    // Ensure areacollection exists
     if (!updatedSelections[mainindex].areacollection) {
       updatedSelections[mainindex].areacollection = [];
     }
 
+    // Ensure the group object exists at index i
     if (!updatedSelections[mainindex].areacollection[i]) {
       updatedSelections[mainindex].areacollection[i] = {
         productGroup: null,
@@ -372,31 +374,51 @@ function AddProjectForm() {
       };
     }
 
-    const newproduct = product;
-    updatedSelections[mainindex].areacollection[i].productGroup = newproduct;
+    updatedSelections[mainindex].areacollection[i].productGroup = product;
 
-    const pg = newproduct;
-    if (!Array.isArray(pg) || pg.length < 2) return;
+    let newMatchedItems: any[] = [];
 
-    let relevantPG = pg.length > 2 ? pg.slice(1, -1) : null;
-
-    let newMatchedItems = null;
-
-    if (relevantPG != null) {
-      newMatchedItems = relevantPG
-        .map((pgItem) => items.find((item) => item[0] === pgItem))
-        .filter((item) => Array.isArray(item));
-    } else {
+    // === Case 1: Single Product Item
+    if (
+      Array.isArray(product) &&
+      product.length > 6 &&
+      typeof product[6] === "string" &&
+      product[6].includes("T")
+    ) {
       newMatchedItems = [product];
     }
 
-    if (newMatchedItems.length == 0) {
+    // === Case 2 & 3: Product Group (type 1 or 2)
+    else if (Array.isArray(product) && product.length >= 3) {
+      let mainProduct = product[1];
+      let addonProducts: string[] = [];
+
+      // try to parse product[2] as JSON (type 2)
+      try {
+        addonProducts = JSON.parse(product[2]);
+      } catch {
+        // not JSON? assume it's a string => treat as type 1, make array
+        addonProducts = [product[2]];
+      }
+
+      const allProductNames = [mainProduct, ...addonProducts];
+
+      newMatchedItems = allProductNames
+        .map((name) => items.find((item) => item[0] === name))
+        .filter(Boolean);
+    }
+
+    // === Fallback: push as is
+    if (newMatchedItems.length === 0) {
       newMatchedItems = [product];
     }
+
+    console.log(newMatchedItems);
 
     updatedSelections[mainindex].areacollection[i].items = newMatchedItems;
     setSelections(updatedSelections);
 
+    // === Update goodsArray
     const filteredGoods = goodsArray.filter(
       (g) => !(g.mainindex === mainindex && g.groupIndex === i)
     );
@@ -404,7 +426,7 @@ function AddProjectForm() {
     const newGoods = newMatchedItems.map((item) => ({
       mainindex,
       groupIndex: i,
-      pg: newproduct,
+      pg: product,
       date: "",
       status: "Pending",
       orderID: "",
@@ -414,16 +436,17 @@ function AddProjectForm() {
 
     setGoodsArray([...filteredGoods, ...newGoods]);
 
+    // === Update tailorsArray
     const filteredTailors = tailorsArray.filter(
       (t) => !(t.mainindex === mainindex && t.groupIndex === i)
     );
 
     const newTailors = newMatchedItems
       .filter((item) => item[7] == true)
-      .map((item, itemIndex) => ({
+      .map((item) => ({
         mainindex,
         groupIndex: i,
-        pg: newproduct,
+        pg: product,
         rate: 0,
         tailorData: [""],
         status: "Pending",
@@ -917,35 +940,57 @@ function AddProjectForm() {
     newTaxRate: number,
     rate: number,
     measurementQty: number,
-    qty: number
+    qty: number,
+    itemIndex: number
   ) => {
     const updatedSelections = [...selections];
     const collection =
       updatedSelections[mainIndex].areacollection[collectionIndex];
 
-    const parsedMeasurementQty = 1;
-    const subtotal = rate * parsedMeasurementQty * qty;
-    const taxAmount = subtotal * (newTaxRate / 100);
-    const total = subtotal + taxAmount;
+    // ✅ Defensive copies
+    const itemsCopy = collection.items.map((item) => [...item]);
+    const totalTaxCopy = [...(collection.totalTax || [])];
+    const totalAmountCopy = [...(collection.totalAmount || [])];
 
-    // ✅ Update the item’s tax and amounts
-    if (collection.items?.[0]) {
-      collection.items[0][5] = newTaxRate;
+    // ✅ Update the specific item's tax rate
+    if (itemsCopy[itemIndex]) {
+      itemsCopy[itemIndex][5] = newTaxRate;
+
+      const subtotal = rate * measurementQty * qty;
+
+      const discountAmount =
+        discountType === "percent"
+          ? (subtotal * discount) / 100
+          : discountType === "cash"
+          ? discount
+          : 0;
+
+      const discountedSubtotal = subtotal - discountAmount;
+
+      const taxAmount = discountedSubtotal * (newTaxRate / 100);
+      const total = discountedSubtotal + taxAmount;
+
+      totalTaxCopy[itemIndex] = parseFloat(taxAmount.toFixed(2));
+      totalAmountCopy[itemIndex] = parseFloat(total.toFixed(2));
     }
-    collection.totalTax[0] = parseFloat(taxAmount.toFixed(2));
-    collection.totalAmount[0] = parseFloat(total.toFixed(2));
+
+    // ✅ Set updated structure back
+    collection.items = itemsCopy;
+    collection.totalTax = totalTaxCopy;
+    collection.totalAmount = totalAmountCopy;
+
+    updatedSelections[mainIndex].areacollection[collectionIndex] = collection;
 
     setSelections(updatedSelections);
 
-    // ✅ Recalculate subtotal (pure base amount without tax)
+    // ===== Recalculate subtotal and grand total =====
     const selectionSubtotals = updatedSelections.flatMap((sel) =>
       sel.areacollection.flatMap(
         (col) =>
           col.items?.reduce((acc, item, idx) => {
-            const areaQty = col.measurement.quantity || 1;
             const itemQty = parseFloat(col.quantities?.[idx]) || 0;
             const itemRate = parseFloat(item[4]) || 0;
-            return acc + 1 * itemQty * itemRate;
+            return acc + itemQty * itemRate;
           }, 0) || 0
       )
     );
@@ -957,15 +1002,14 @@ function AddProjectForm() {
       (a, b) => a + b,
       0
     );
-    setAmount(parseFloat(pureSubtotal.toFixed(2))); // ✅ Subtotal without tax
+    setAmount(parseFloat(pureSubtotal.toFixed(2)));
 
-    // ✅ Recalculate totals (with tax)
     const { totalTax, totalAmount } = recalculateTotals(
       updatedSelections,
       additionalItems
     );
     setTax(totalTax);
-    setGrandTotal(parseFloat(totalAmount.toFixed(2))); // ✅ Total including tax
+    setGrandTotal(parseFloat(totalAmount.toFixed(2)));
   };
 
   // Delete item by index
@@ -1760,7 +1804,7 @@ function AddProjectForm() {
     doc.text("GSTIN/UIN: 27AUOPS3749J1ZT", 15, yOffset);
     yOffset += 5;
     doc.text(
-      "Email: sahanipaints@gmail.com | Phone: 9822097512 / 7020870276",
+      "Email: sahanipaints@gmail.com | Phone: 9822097512/ 7020870276",
       15,
       yOffset
     );
@@ -2130,51 +2174,72 @@ function AddProjectForm() {
     value: number,
     measurementQuantity: number,
     taxRate: number,
-    qty: number
+    qty: number,
+    itemIndex: number
   ) => {
     const updatedSelections = [...selections];
-    const measurementQty = 1;
-    const newMRP = parseFloat(value.toString() || "0");
+    const newMRP = Math.round(parseInt(value.toString() || "0"));
 
-    const areaCollection =
-      updatedSelections[mainIndex].areacollection[collectionIndex];
-    areaCollection.items[0][4] = newMRP;
+    // Clone structures
+    const areaCollectionCopy = [...updatedSelections[mainIndex].areacollection];
+    const collection = areaCollectionCopy[collectionIndex];
+    const itemsCopy = collection.items.map((item) => [...item]);
 
-    // Calculate original subtotal (before discount and tax)
-    const subtotal = newMRP * qty;
-
-    // Apply discount
-    let effectiveDiscountPercent = 0;
-    if (discountType === "percent") {
-      effectiveDiscountPercent = discount;
-    } else if (discountType === "cash") {
-      effectiveDiscountPercent = subtotal > 0 ? (discount / subtotal) * 100 : 0;
+    // ✅ Update the MRP of the correct item
+    if (itemsCopy[itemIndex]) {
+      itemsCopy[itemIndex][4] = newMRP;
     }
 
-    const discountAmount = (subtotal * effectiveDiscountPercent) / 100;
-    const discountedSubtotal = subtotal - discountAmount;
+    // ✅ Get tax rate (prefer from item if not passed)
+    const currentTaxRate =
+      taxRate || parseFloat(itemsCopy[itemIndex]?.[5]) || 0;
 
-    const taxAmount =
-      (discountedSubtotal * parseFloat(taxRate.toString() || "0")) / 100;
+    // ✅ Calculate subtotal and tax for this item
+    const subtotal = newMRP * qty;
+    const discountAmount =
+      discountType === "percent"
+        ? (subtotal * discount) / 100
+        : discountType === "cash"
+        ? discount
+        : 0;
+
+    const discountedSubtotal = subtotal - discountAmount;
+    const taxAmount = (discountedSubtotal * currentTaxRate) / 100;
     const totalWithTax = discountedSubtotal + taxAmount;
 
-    areaCollection.totalTax[0] = parseFloat(taxAmount.toFixed(2));
-    areaCollection.totalAmount[0] = parseFloat(totalWithTax.toFixed(2));
+    // ✅ Ensure totalTax and totalAmount arrays have enough slots
+    const updatedTaxArray = [...(collection.totalTax || [])];
+    const updatedTotalArray = [...(collection.totalAmount || [])];
 
+    updatedTaxArray[itemIndex] = parseFloat(taxAmount.toFixed(2));
+    updatedTotalArray[itemIndex] = parseFloat(totalWithTax.toFixed(2));
+
+    // ✅ Update collection
+    areaCollectionCopy[collectionIndex] = {
+      ...collection,
+      items: itemsCopy,
+      totalTax: updatedTaxArray,
+      totalAmount: updatedTotalArray,
+    };
+
+    updatedSelections[mainIndex] = {
+      ...updatedSelections[mainIndex],
+      areacollection: areaCollectionCopy,
+    };
+
+    // ✅ Set updated state
     setSelections(updatedSelections);
 
     // ===== Recalculate Totals =====
     const selectionAmountArray = updatedSelections.flatMap((selection) =>
-      selection.areacollection.flatMap((col) => {
-        return (
+      selection.areacollection.flatMap(
+        (col) =>
           col.items?.reduce((acc, item, idx) => {
             const itemQty = parseFloat(col.quantities?.[idx]) || 0;
             const itemRate = parseFloat(item[4]) || 0;
-            const areaQty = 1;
-            return acc + areaQty * itemQty * itemRate;
+            return acc + itemQty * itemRate;
           }, 0) || 0
-        );
-      })
+      )
     );
 
     const additionalAmountArray = additionalItems.map(
@@ -2186,14 +2251,15 @@ function AddProjectForm() {
       ...additionalAmountArray,
     ].reduce((acc, val) => acc + val, 0);
 
-    setAmount(parseFloat(subTotalOnly.toFixed(2))); // ✅ This is your subtotal (no tax)
+    setAmount(parseFloat(subTotalOnly.toFixed(2)));
 
-    const { totalTax, totalAmount } = recalculateTotals(
+    const { totalTax: grandTax, totalAmount: grandTotal } = recalculateTotals(
       updatedSelections,
       additionalItems
     );
-    setTax(totalTax);
-    setGrandTotal(totalAmount); // ✅ This is total including tax
+
+    setTax(grandTax);
+    setGrandTotal(grandTotal);
   };
 
   // Utility function to format numbers
@@ -2563,138 +2629,131 @@ function AddProjectForm() {
               </thead>
               <tbody>
                 {selections.flatMap((selection, mainIndex) =>
-                  selection.areacollection?.map(
+                  selection.areacollection?.flatMap(
                     (collection, collectionIndex) => {
-                      const item = collection.items?.[0];
-                      const qty = collection.quantities?.[0] || 0;
-                      if (!item) return null;
+                      if (!collection.items || collection.items.length === 0)
+                        return null;
 
-                      const calculatedMRP = item[4];
-                      const subtotal =
-                        parseFloat(item[4]) *
-                        parseFloat(collection.measurement.quantity || "0") *
-                        parseFloat(qty || "0");
-                      const taxAmount = collection.totalTax?.[0] || 0;
-                      const totalAmount = collection.totalAmount?.[0] || 0;
+                      return collection.items.map((item, itemIndex) => {
+                        const qty = parseFloat(
+                          collection.quantities?.[itemIndex] || "0"
+                        );
+                        const measurementQty =
+                          parseFloat(collection.measurement?.quantity || "0") ||
+                          1;
+                        const rate = parseFloat(item[4]) || 0;
+                        const taxRate = parseFloat(item[5]) || 0;
 
-                      return (
-                        <tr
-                          key={`${mainIndex}-${collectionIndex}`}
-                          className="border-b border-gray-100 hover:bg-indigo-50/50 transition-colors duration-200"
-                        >
-                          <td className="py-4 px-6 text-center text-sm font-inter">
-                            {collectionIndex + 1}
-                          </td>
-                          <td className="py-4 px-6 text-sm font-inter">
-                            {selection.area}
-                          </td>
-                          <td className="py-4 px-6 text-sm font-inter">
-                            {collection.productGroup?.[0] || "N/A"}
-                          </td>
-                          <td className="py-4 px-6 text-sm font-inter">
-                            {collection.measurement.width &&
-                            collection.measurement.height
-                              ? `${collection.measurement.width} x ${
-                                  collection.measurement.height
-                                } ${collection.measurement.unit || ""}`
-                              : "N/A"}
-                          </td>
-                          <td className="py-4 px-6 text-sm">
-                            <input
-                              type="number"
-                              className="w-[140px] border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
-                              value={calculatedMRP === 0 ? "" : calculatedMRP}
-                              onChange={(e) => {
-                                let inputValue = e.target.value;
+                        const subtotal = rate * measurementQty * qty;
+                        const taxAmount = subtotal * (taxRate / 100);
+                        const total = subtotal + taxAmount;
 
-                                // Remove leading zeros if more than one digit and not a decimal
-                                if (
-                                  inputValue.length > 1 &&
-                                  inputValue[0] === "0" &&
-                                  inputValue[1] !== "."
-                                ) {
-                                  inputValue = inputValue.replace(/^0+/, "");
+                        return (
+                          <tr
+                            key={`${mainIndex}-${collectionIndex}-${itemIndex}`}
+                            className="border-b border-gray-100 hover:bg-indigo-50/50 transition-colors duration-200"
+                          >
+                            <td className="py-4 px-6 text-center text-sm font-inter">
+                              {itemIndex + 1}
+                            </td>
+                            <td className="py-4 px-6 text-sm font-inter">
+                              {selection.area}
+                            </td>
+                            <td className="py-4 px-6 text-sm font-inter">
+                              {item[0] || "N/A"}
+                            </td>
+                            <td className="py-4 px-6 text-sm font-inter">
+                              {collection.measurement.width &&
+                              collection.measurement.height
+                                ? `${collection.measurement.width} x ${
+                                    collection.measurement.height
+                                  } ${collection.measurement.unit || ""}`
+                                : "N/A"}
+                            </td>
+                            <td className="py-4 px-6 text-sm">
+                              <input
+                                type="number"
+                                className="w-[140px] border border-gray-200 !rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
+                                value={rate === 0 ? "" : rate}
+                                onChange={(e) => {
+                                  const parsedValue = parseFloat(
+                                    e.target.value || "0"
+                                  );
+                                  handleMRPChange(
+                                    mainIndex,
+                                    collectionIndex,
+                                    parsedValue,
+                                    collection.measurement.quantity,
+                                    parseFloat(item[5]),
+                                    qty,
+                                    itemIndex // ✅ pass the index
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td className="py-4 px-2 text-sm">
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="w-full border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
+                                value={qty}
+                                onChange={(e) => {
+                                  let value = e.target.value;
+                                  if (
+                                    value.length > 1 &&
+                                    value[0] === "0" &&
+                                    value[1] !== "."
+                                  ) {
+                                    value = value.replace(/^0+/, "");
+                                  }
+                                  const parsedQty = parseFloat(value) || 0;
+
+                                  handleQuantityChange(
+                                    `${mainIndex}-${collectionIndex}`,
+                                    parsedQty,
+                                    mainIndex,
+                                    collectionIndex,
+                                    measurementQty,
+                                    rate,
+                                    taxRate,
+                                    itemIndex
+                                  );
+                                }}
+                              />
+                            </td>
+                            <td className="py-4 px-6 text-sm font-inter">
+                              {formatNumber(subtotal)}
+                            </td>
+                            <td className="py-4 px-2 text-sm">
+                              <input
+                                type="number"
+                                className="w-full border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
+                                value={taxRate}
+                                onChange={(e) =>
+                                  handleTaxChange(
+                                    mainIndex,
+                                    collectionIndex,
+                                    parseFloat(e.target.value),
+                                    parseFloat(item[4]), // rate
+                                    parseFloat(
+                                      collection.measurement.quantity || "1"
+                                    ), // measurementQty
+                                    qty,
+                                    itemIndex // ✅ pass index
+                                  )
                                 }
-
-                                const parsedValue = parseFloat(
-                                  inputValue || "0"
-                                );
-
-                                handleMRPChange(
-                                  mainIndex,
-                                  collectionIndex,
-                                  parsedValue,
-                                  collection.measurement.quantity,
-                                  item[5],
-                                  qty
-                                );
-                              }}
-                            />
-                          </td>
-                          <td className="py-4 px-2 text-sm">
-                            <input
-                              type="number"
-                              min="0"
-                              step="any"
-                              className="w-full border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
-                              value={qty}
-                              onChange={(e) => {
-                                let value = e.target.value;
-
-                                // Optional: Prevent leading zero issues
-                                if (
-                                  value.length > 1 &&
-                                  value[0] === "0" &&
-                                  value[1] !== "."
-                                ) {
-                                  value = value.replace(/^0+/, "");
-                                }
-
-                                const parsedQty = parseFloat(value) || 0;
-
-                                handleQuantityChange(
-                                  `${mainIndex}-${collectionIndex}`,
-                                  parsedQty,
-                                  mainIndex,
-                                  collectionIndex,
-                                  parseFloat(
-                                    collection.measurement?.quantity || "0"
-                                  ),
-                                  parseFloat(item[4]),
-                                  parseFloat(item[5]),
-                                  0
-                                );
-                              }}
-                            />
-                          </td>
-                          <td className="py-4 px-6 text-sm font-inter">
-                            {formatNumber(subtotal)}
-                          </td>
-                          <td className="py-4 px-2 text-sm">
-                            <input
-                              type="number"
-                              className="w-full border border-gray-200 !rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 font-inter"
-                              value={item[5]}
-                              onChange={(e) =>
-                                handleTaxChange(
-                                  mainIndex,
-                                  collectionIndex,
-                                  parseFloat(e.target.value),
-                                  item[4],
-                                  collection.measurement.quantity,
-                                  qty
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-4 px-6 text-sm font-inter">
-                            {formatNumber(taxAmount)}
-                          </td>
-                          <td className="py-4 px-6 text-sm font-inter">
-                            {formatNumber(totalAmount)}
-                          </td>
-                        </tr>
-                      );
+                              />
+                            </td>
+                            <td className="py-4 px-6 text-sm font-inter">
+                              {formatNumber(taxAmount)}
+                            </td>
+                            <td className="py-4 px-6 text-sm font-inter">
+                              {formatNumber(total)}
+                            </td>
+                          </tr>
+                        );
+                      });
                     }
                   )
                 )}
