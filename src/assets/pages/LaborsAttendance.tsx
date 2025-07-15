@@ -298,16 +298,23 @@ function LaborsAttendance() {
       // Filter by month (format: "YYYY-MM")
       if (filterMonth && !entry.date.startsWith(filterMonth)) return false;
 
-      // Search by labor name
-      if (searchTerm) {
-        const laborMatch = entry.labors.some((labor) =>
-          labor.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        if (!laborMatch) return false;
-      }
-
       return true;
     })
+    .map((entry) => {
+      // If searching by labor name, filter the labors array to only include matching names
+      if (searchTerm) {
+        const filteredLabors = entry.labors.filter((labor) =>
+          labor.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        // Return a modified entry with only matching labors, or null if no matches
+        return filteredLabors.length > 0
+          ? { ...entry, labors: filteredLabors }
+          : null;
+      }
+      return entry;
+    })
+    .filter((entry) => entry !== null) // Remove entries with no matching labors
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
@@ -332,18 +339,22 @@ function LaborsAttendance() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Site Name
             </label>
-            <select
-              value={selectedSite}
-              onChange={(e) => setSelectedSite(e.target.value)}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">Select Site</option>
-              {sites.map((site, index) => (
-                <option key={index} value={site}>
-                  {site}
-                </option>
-              ))}
-            </select>
+
+            <Select
+              options={sites.map((site) => ({
+                label: site,
+                value: site,
+              }))}
+              value={
+                selectedSite
+                  ? { label: selectedSite, value: selectedSite }
+                  : null
+              }
+              onChange={(selected) => setSelectedSite(selected?.value || "")}
+              placeholder="Select Site"
+              isClearable
+              className="w-full"
+            />
           </div>
           <div className="flex items-end gap-2">
             {(canEditAttendance || !isEditing) && (
@@ -517,18 +528,21 @@ function LaborsAttendance() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Filter by Site
               </label>
-              <select
-                value={filterSite}
-                onChange={(e) => setFilterSite(e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                <option value="">All Sites</option>
-                {sites.map((site, index) => (
-                  <option key={index} value={site}>
-                    {site}
-                  </option>
-                ))}
-              </select>
+              <Select
+                options={[
+                  { label: "All Sites", value: "" },
+                  ...sites.map((site) => ({ label: site, value: site })),
+                ]}
+                value={
+                  filterSite === ""
+                    ? { label: "All Sites", value: "" }
+                    : { label: filterSite, value: filterSite }
+                }
+                onChange={(selected) => setFilterSite(selected?.value || "")}
+                placeholder="Select Site"
+                isClearable
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
